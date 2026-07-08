@@ -40,6 +40,7 @@ function App() {
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isGeneratingCatalog, setIsGeneratingCatalog] = useState(false);
   const [generationStep, setGenerationStep] = useState<string>('');
+  const [isLoadingCatalogs, setIsLoadingCatalogs] = useState(false);
   
   // Theme & Search
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -85,6 +86,7 @@ function App() {
     setProductCatalogs([]);
     setShowGenerateNewForm(false);
     setShowAddProduct(false);
+    setIsLoadingCatalogs(true);
     
     if (prod._id) {
       try {
@@ -95,7 +97,11 @@ function App() {
         }
       } catch (err) {
         console.error('Error fetching catalog history:', err);
+      } finally {
+        setIsLoadingCatalogs(false);
       }
+    } else {
+      setIsLoadingCatalogs(false);
     }
   };
 
@@ -454,121 +460,128 @@ function App() {
           {/* 3. Catalog Preview Screen */}
           {selectedProduct && !showAddProduct && !isGeneratingCatalog && (
             <div className="space-y-6 print:space-y-0">
-              
-              {/* Sourcing Node is Selected, but either no catalogs exist or they clicked 'New Version' */}
-              {(showGenerateNewForm || productCatalogs.length === 0) && (
-                <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 space-y-6 print:hidden">
-                  
-                  <div className="flex justify-between items-start border-b border-slate-100 pb-4">
-                    <div>
-                      <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-bold uppercase tracking-wider">
-                        {productCatalogs.length === 0 ? 'Unanalyzed Sourcing Node' : 'Generate New Sourcing Snapshot'}
-                      </span>
-                      <h2 className="text-xl font-bold text-slate-800 mt-2">{selectedProduct.productName}</h2>
-                    </div>
-                    {productCatalogs.length > 0 && (
+              {isLoadingCatalogs ? (
+                <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 shadow-sm p-12 rounded-[2rem] flex flex-col justify-center items-center gap-4 text-center min-h-[350px]">
+                  <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">Loading Sourcing Catalog...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Sourcing Node is Selected, but either no catalogs exist or they clicked 'New Version' */}
+                  {(showGenerateNewForm || productCatalogs.length === 0) && (
+                    <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 space-y-6 print:hidden">
+                      
+                      <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                        <div>
+                          <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-bold uppercase tracking-wider">
+                            {productCatalogs.length === 0 ? 'Unanalyzed Sourcing Node' : 'Generate New Sourcing Snapshot'}
+                          </span>
+                          <h2 className="text-xl font-bold text-slate-800 mt-2">{selectedProduct.productName}</h2>
+                        </div>
+                        {productCatalogs.length > 0 && (
+                          <button
+                            onClick={() => setShowGenerateNewForm(false)}
+                            className="text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                          <span className="text-xxs font-semibold text-slate-400 block mb-1">Product Cost</span>
+                          <span className="text-md font-bold text-slate-800">₹{selectedProduct.cost}</span>
+                        </div>
+                        <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                          <span className="text-xxs font-semibold text-slate-400 block mb-1">Sourcing MOQ</span>
+                          <span className="text-md font-bold text-slate-800">{selectedProduct.moq} Pieces</span>
+                        </div>
+                        <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                          <span className="text-xxs font-semibold text-slate-400 block mb-1">Target Price</span>
+                          <span className="text-md font-bold text-slate-800">₹{selectedProduct.tentativeSellingPrice}</span>
+                        </div>
+                      </div>
+
+                      {/* Catalog Compilation Info */}
+                      <div className="bg-slate-50 border border-slate-150 p-5 rounded-2xl space-y-4">
+                        <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                          <FileText className="w-4 h-4 text-brand-500" />
+                          Catalog Sheet Configuration
+                        </h3>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Catalog Sheet Title</label>
+                            <input
+                              type="text"
+                              value={catalogTitle}
+                              onChange={(e) => setCatalogTitle(e.target.value)}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Prepared By (Author)</label>
+                            <input
+                              type="text"
+                              value={preparedBy}
+                              onChange={(e) => setPreparedBy(e.target.value)}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
                       <button
-                        onClick={() => setShowGenerateNewForm(false)}
-                        className="text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer"
+                        onClick={handleGenerate}
+                        className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold uppercase tracking-wider text-xs rounded-xl transition-all shadow-sm shadow-brand-500/15 flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        Cancel
+                        <Sparkles className="w-4 h-4" />
+                        Generate Market Intelligence Catalog
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                      <span className="text-xxs font-semibold text-slate-400 block mb-1">Product Cost</span>
-                      <span className="text-md font-bold text-slate-800">₹{selectedProduct.cost}</span>
-                    </div>
-                    <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                      <span className="text-xxs font-semibold text-slate-400 block mb-1">Sourcing MOQ</span>
-                      <span className="text-md font-bold text-slate-800">{selectedProduct.moq} Pieces</span>
-                    </div>
-                    <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                      <span className="text-xxs font-semibold text-slate-400 block mb-1">Target Price</span>
-                      <span className="text-md font-bold text-slate-800">₹{selectedProduct.tentativeSellingPrice}</span>
-                    </div>
-                  </div>
+                  {/* Sourcing Node has catalogs, and we are not in the new catalog generation view */}
+                  {!showGenerateNewForm && productCatalogs.length > 0 && activeCatalog && (
+                    <div className="space-y-4">
+                      {/* Historical Report Version Archive Selector bar */}
+                      <div className="bg-white border border-slate-150 px-4 py-2 rounded-2xl shadow-sm flex flex-wrap items-center justify-between gap-3 print:hidden">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-xxs font-bold text-slate-400 uppercase tracking-widest text-[10px]">Selected Sourcing Snapshot:</span>
+                          <select
+                            value={activeCatalog._id}
+                            onChange={(e) => {
+                              const cat = productCatalogs.find(c => c._id === e.target.value);
+                              if (cat) setActiveCatalog(cat);
+                            }}
+                            className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none cursor-pointer hover:border-slate-350 mb-0"
+                          >
+                            {productCatalogs.map((cat) => (
+                              <option key={cat._id} value={cat._id}>
+                                {new Date(cat.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })} - {cat.catalogTitle} ({cat.preparedBy})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
-                  {/* Catalog Compilation Info */}
-                  <div className="bg-slate-50 border border-slate-150 p-5 rounded-2xl space-y-4">
-                    <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                      <FileText className="w-4 h-4 text-brand-500" />
-                      Catalog Sheet Configuration
-                    </h3>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Catalog Sheet Title</label>
-                        <input
-                          type="text"
-                          value={catalogTitle}
-                          onChange={(e) => setCatalogTitle(e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                        />
+                        <button
+                          onClick={() => setShowGenerateNewForm(true)}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm mb-0"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          New Version
+                        </button>
                       </div>
-                      <div>
-                        <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Prepared By (Author)</label>
-                        <input
-                          type="text"
-                          value={preparedBy}
-                          onChange={(e) => setPreparedBy(e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                        />
+
+                      {/* Render Catalog Preview */}
+                      <div className="print:m-0">
+                        <CatalogPreview product={selectedProduct} catalog={activeCatalog} />
                       </div>
                     </div>
-                  </div>
-
-                  <button
-                    onClick={handleGenerate}
-                    className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold uppercase tracking-wider text-xs rounded-xl transition-all shadow-sm shadow-brand-500/15 flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Generate Market Intelligence Catalog
-                  </button>
-                </div>
+                  )}
+                </>
               )}
-
-              {/* Sourcing Node has catalogs, and we are not in the new catalog generation view */}
-              {!showGenerateNewForm && productCatalogs.length > 0 && activeCatalog && (
-                <div className="space-y-4">
-                  {/* Historical Report Version Archive Selector bar */}
-                  <div className="bg-white border border-slate-150 px-4 py-2 rounded-2xl shadow-sm flex flex-wrap items-center justify-between gap-3 print:hidden">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-xxs font-bold text-slate-400 uppercase tracking-widest text-[10px]">Selected Sourcing Snapshot:</span>
-                      <select
-                        value={activeCatalog._id}
-                        onChange={(e) => {
-                          const cat = productCatalogs.find(c => c._id === e.target.value);
-                          if (cat) setActiveCatalog(cat);
-                        }}
-                        className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none cursor-pointer hover:border-slate-350 mb-0"
-                      >
-                        {productCatalogs.map((cat) => (
-                          <option key={cat._id} value={cat._id}>
-                            {new Date(cat.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })} - {cat.catalogTitle} ({cat.preparedBy})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <button
-                      onClick={() => setShowGenerateNewForm(true)}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm mb-0"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      New Version
-                    </button>
-                  </div>
-
-                  {/* Render Catalog Preview */}
-                  <div className="print:m-0">
-                    <CatalogPreview product={selectedProduct} catalog={activeCatalog} />
-                  </div>
-                </div>
-              )}
-
             </div>
           )}
 

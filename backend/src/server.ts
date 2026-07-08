@@ -143,6 +143,22 @@ app.post('/api/catalog/generate/:productId', async (req, res) => {
     console.log(`Step 1: Fetching Market Intelligence for ${product.productName}...`);
     const fetchedData = await fetchMarketIntelligence(product.productName);
 
+    // Sync with actual researched marketplace sellers and ads count
+    if (product.marketplaceSellers) {
+      const actualSellers = 
+        (product.marketplaceSellers.amazon || 0) + 
+        (product.marketplaceSellers.flipkart || 0) + 
+        (product.marketplaceSellers.meesho || 0) + 
+        (product.marketplaceSellers.jiomart || 0);
+      
+      if (actualSellers > 0) {
+        fetchedData.approxSellers = actualSellers;
+      }
+    }
+    if (product.adsCount !== undefined && product.adsCount !== null) {
+      fetchedData.metaAdsCount = product.adsCount;
+    }
+
     console.log('Step 2: Calculating Metrics...');
     const calculations = performCalculations(
       product.cost,

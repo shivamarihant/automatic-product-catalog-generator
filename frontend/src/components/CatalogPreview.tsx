@@ -266,14 +266,21 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                   <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">Competitor Product Links</h3>
                   {product.shopifyStores.length > 0 ? (
                     <div className="space-y-2">
-                      {product.shopifyStores.map((store, idx) => (
-                        <div key={idx} className="bg-blue-50/30 border border-blue-100/50 px-3 py-2 rounded-lg text-xs flex items-center gap-2">
-                          <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                          <a href={store.startsWith('http') ? store : `https://${store}`} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-blue-700 hover:text-blue-800 hover:underline transition-all">
-                            {store}
-                          </a>
-                        </div>
-                      ))}
+                      {product.shopifyStores.map((store, idx) => {
+                        const isNotFound = store.includes('No live competitor URLs found');
+                        return (
+                          <div key={idx} className="bg-blue-50/30 border border-blue-100/50 px-3 py-2 rounded-lg text-xs flex items-center gap-2">
+                            <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                            {isNotFound ? (
+                              <span className="text-slate-500 font-medium">{store}</span>
+                            ) : (
+                              <a href={store.startsWith('http') ? store : `https://${store}`} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-blue-700 hover:text-blue-800 hover:underline transition-all">
+                                {store}
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-xs text-slate-400 italic">No competitor URLs manually logged.</p>

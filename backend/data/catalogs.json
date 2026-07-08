@@ -1,1 +1,31 @@
-[]
+[
+  {
+    "productId": "6a4de48feaa66ed243c20908",
+    "preparedBy": "Global Sourcing Lead",
+    "catalogTitle": "Market Feasibility & Landed Cost Report",
+    "logoUrl": "",
+    "fetchedData": {
+      "amazonBestSellerCountries": [
+        "India",
+        "USA",
+        "UK",
+        "Canada",
+        "Germany"
+      ],
+      "firstMoverAdvantage": "MEDIUM",
+      "estimatedCompetition": "Medium",
+      "approxSellers": 20,
+      "metaAdsCount": 14
+    },
+    "calculations": {
+      "margin": 1000,
+      "marginPercentage": 66.71,
+      "netProfit": 950,
+      "opportunityScore": 80
+    },
+    "aiRecommendation": "This Minecraft-Inspired Torch Lamp presents a highly attractive sourcing opportunity with an impressive 80/100 score and a substantial 66.71% calculated margin, yielding ₹950 net profit per unit. Despite a medium competitive landscape with approximately 20 existing sellers and 2 Meta ads running, the product demonstrates strong international demand, especially in India, USA, UK, Canada, and Germany. Given the robust demand in India, a focused launch strategy emphasizing unique selling points, quality assurance, and efficient logistics to mitigate the 20% RTO rate and ₹50 shipping cost will be crucial for success. This product is recommended for immediate sourcing with a strategic launch plan.",
+    "_id": "6a4de496eaa66ed243c20909",
+    "createdAt": "2026-07-08T05:48:06.648Z",
+    "pdfPath": "http://localhost:5001/uploads/catalogs/2026-07-08/catalog-6a4de496eaa66ed243c20909.pdf"
+  }
+]

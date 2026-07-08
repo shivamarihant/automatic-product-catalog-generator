@@ -52,10 +52,14 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
   // Generate Shopify store list
   const shopifyHtml = product.shopifyStores.length > 0 
     ? `<div class="shopify-container">` + product.shopifyStores.map((store: string) => {
+        const isNotFound = store.includes('No live competitor URLs found');
+        if (isNotFound) {
+          return `<div class="shopify-item"><div class="shopify-dot" style="background-color: #94a3b8;"></div> <span style="font-size: 11px; color: #64748b; font-style: italic;">No live competitor URLs found</span></div>`;
+        }
         const url = store.startsWith('http') ? store : `https://${store}`;
         return `<div class="shopify-item"><div class="shopify-dot"></div> <a href="${url}" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dotted #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%; display: inline-block; vertical-align: bottom;">${store}</a></div>`;
       }).join('') + `</div>`
-    : '<div style="font-size: 11px; color: #94a3b8; font-style: italic;">No active competitor URLs logged.</div>';
+    : '<div style="font-size: 11px; color: #94a3b8; font-style: italic;">No live competitor URLs found</div>';
 
   return `
 <!DOCTYPE html>

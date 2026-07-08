@@ -312,7 +312,7 @@ export async function analyzeCompetitorsWithAI(productName: string, images?: str
 
   const shopifyStores = serperUrls.length > 0
     ? serperUrls
-    : ['No live competitor URLs found — check SERPER_API_KEY in .env'];
+    : ['No live competitor URLs found'];
 
   return {
     ...counts,

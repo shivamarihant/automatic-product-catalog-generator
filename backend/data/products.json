@@ -1,1 +1,56 @@
-[]
+[
+  {
+    "productName": "Minecraft-Inspired Torch Lamp – Diamond Ore Potion Bottle Night Light",
+    "simplifiedName": "Minecraft Torch Lamp",
+    "images": [
+      "http://localhost:5001/uploads/img-1783489520113-53179025.png",
+      "http://localhost:5001/uploads/img-1783489623277-931435958.png",
+      "http://localhost:5001/uploads/img-1783489627853-887705207.png"
+    ],
+    "cost": 499,
+    "moq": 100,
+    "marketplaceSellers": {
+      "amazon": 6,
+      "flipkart": 1,
+      "meesho": 0,
+      "jiomart": 0
+    },
+    "shopifyStores": [
+      "No live competitor URLs found — check SERPER_API_KEY in .env"
+    ],
+    "adsCount": 2,
+    "logistics": {
+      "weight": "10g",
+      "dimensions": {
+        "length": 10,
+        "width": 5,
+        "height": 2
+      },
+      "shippingCost": 50
+    },
+    "tentativeSellingPrice": 1499,
+    "rtoPercentage": 20,
+    "_id": "6a4de48feaa66ed243c20908",
+    "createdAt": "2026-07-08T05:47:59.017Z",
+    "fetchedData": {
+      "amazonBestSellerCountries": [
+        "India",
+        "USA",
+        "UK",
+        "Canada",
+        "Germany"
+      ],
+      "firstMoverAdvantage": "MEDIUM",
+      "estimatedCompetition": "Medium",
+      "approxSellers": 20,
+      "metaAdsCount": 14
+    },
+    "calculations": {
+      "margin": 1000,
+      "marginPercentage": 66.71,
+      "netProfit": 950,
+      "opportunityScore": 80
+    },
+    "aiRecommendation": "This Minecraft-Inspired Torch Lamp presents a highly attractive sourcing opportunity with an impressive 80/100 score and a substantial 66.71% calculated margin, yielding ₹950 net profit per unit. Despite a medium competitive landscape with approximately 20 existing sellers and 2 Meta ads running, the product demonstrates strong international demand, especially in India, USA, UK, Canada, and Germany. Given the robust demand in India, a focused launch strategy emphasizing unique selling points, quality assurance, and efficient logistics to mitigate the 20% RTO rate and ₹50 shipping cost will be crucial for success. This product is recommended for immediate sourcing with a strategic launch plan."
+  }
+]
