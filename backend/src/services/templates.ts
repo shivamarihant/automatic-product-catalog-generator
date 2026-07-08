@@ -69,7 +69,7 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
           if (parts.length > 0) brand = parts[0];
         } catch {}
 
-        const adsUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent('"' + brand + '"')}&search_type=keyword_exact_phrase`;
+        const adsUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(brand)}&search_type=keyword_unordered`;
 
         return `
           <div class="shopify-item" style="justify-content: space-between;">
@@ -689,7 +689,7 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
         <div class="section-title" style="margin-top: 5mm;">Meta Ads Density</div>
         <div class="competitor-card" style="border-left: 4px solid #6366f1; display: flex; justify-content: space-between; align-items: center; gap: 4mm;">
           <span class="competitor-name">Active Product Creatives (Meta Ads Library)</span>
-          <a class="competitor-count" style="color: #6366f1; font-size: 13px; white-space: nowrap; flex-shrink: 0; text-decoration: none;" href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent('"' + (product.simplifiedName || product.productName) + '"')}&search_type=keyword_exact_phrase" target="_blank">${product.adsCount} Ads Running ↗</a>
+          <a class="competitor-count" style="color: #6366f1; font-size: 13px; white-space: nowrap; flex-shrink: 0; text-decoration: none;" href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(product.simplifiedName || product.productName)}&search_type=keyword_unordered" target="_blank">${product.adsCount} Ads Running ↗</a>
         </div>
 
         <div class="section-title" style="margin-top: 5mm;">Amazon Global Traction</div>

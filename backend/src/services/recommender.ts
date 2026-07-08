@@ -268,7 +268,7 @@ async function countMarketplaceSellersViaSerper(productName: string): Promise<{
     serperSearch(`site:flipkart.com "${productName}"`),
     serperSearch(`site:meesho.com "${productName}"`),
     serperSearch(`site:jiomart.com "${productName}"`),
-    serperSearch(`"${productName}" site:facebook.com/ads/library OR "facebook ads" OR "meta ads"`)
+    serperSearch(`"${productName}" facebook ads`)
   ]);
 
   const normalize = (data: { organic: number; total: number }, divisor: number, cap: number): number => {

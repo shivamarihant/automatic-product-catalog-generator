@@ -306,7 +306,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                             </div>
                             {!isNotFound && (
                               <a
-                                href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent('"' + brand + '"')}&search_type=keyword_exact_phrase`}
+                                href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(brand)}&search_type=keyword_unordered`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-[10px] font-extrabold text-purple-700 hover:text-purple-900 bg-white hover:bg-purple-50 px-2 py-0.5 rounded border border-purple-200 transition-all shrink-0 shadow-sm"
@@ -328,7 +328,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                   <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100/60 p-2 rounded-xl flex items-center justify-between text-xs gap-4 shadow-sm">
                     <span className="text-purple-900 font-bold tracking-wide">Active Creatives in Meta Ads Library</span>
                     <a
-                      href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent('"' + (product.simplifiedName || product.productName) + '"')}&search_type=keyword_exact_phrase`}
+                      href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(product.simplifiedName || product.productName)}&search_type=keyword_unordered`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-black text-purple-700 text-[0.7rem] bg-white px-3 py-1 rounded-md shadow-sm border border-purple-100 hover:border-purple-300 hover:text-purple-900 transition-all shrink-0 whitespace-nowrap"
