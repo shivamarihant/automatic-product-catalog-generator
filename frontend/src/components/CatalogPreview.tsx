@@ -268,14 +268,40 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                     <div className="space-y-2">
                       {product.shopifyStores.map((store, idx) => {
                         const isNotFound = store.includes('No live competitor URLs found');
+                        const extractBrandName = (url: string): string => {
+                          try {
+                            let hostname = url;
+                            if (url.startsWith('http://') || url.startsWith('https://')) {
+                              hostname = new URL(url).hostname;
+                            }
+                            hostname = hostname.replace(/^www\./i, '');
+                            const parts = hostname.split('.');
+                            return parts.length > 0 ? parts[0] : hostname;
+                          } catch {
+                            return url;
+                          }
+                        };
+                        const brand = extractBrandName(store);
                         return (
-                          <div key={idx} className="bg-blue-50/30 border border-blue-100/50 px-3 py-2 rounded-lg text-xs flex items-center gap-2">
-                            <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                            {isNotFound ? (
-                              <span className="text-slate-500 font-medium">{store}</span>
-                            ) : (
-                              <a href={store.startsWith('http') ? store : `https://${store}`} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-blue-700 hover:text-blue-800 hover:underline transition-all">
-                                {store}
+                          <div key={idx} className="bg-blue-50/30 border border-blue-100/50 px-3 py-2 rounded-lg text-xs flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 truncate">
+                              <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                              {isNotFound ? (
+                                <span className="text-slate-500 font-medium">{store}</span>
+                              ) : (
+                                <a href={store.startsWith('http') ? store : `https://${store}`} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-blue-700 hover:text-blue-800 hover:underline transition-all">
+                                  {store}
+                                </a>
+                              )}
+                            </div>
+                            {!isNotFound && (
+                              <a
+                                href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent('"' + brand + '"')}&search_type=keyword_unordered`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] font-extrabold text-purple-700 hover:text-purple-900 bg-white hover:bg-purple-50 px-2 py-0.5 rounded border border-purple-200 transition-all shrink-0 shadow-sm"
+                              >
+                                View Ads ↗
                               </a>
                             )}
                           </div>

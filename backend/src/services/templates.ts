@@ -57,7 +57,29 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
           return `<div class="shopify-item"><div class="shopify-dot" style="background-color: #94a3b8;"></div> <span style="font-size: 11px; color: #64748b; font-style: italic;">No live competitor URLs found</span></div>`;
         }
         const url = store.startsWith('http') ? store : `https://${store}`;
-        return `<div class="shopify-item"><div class="shopify-dot"></div> <a href="${url}" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dotted #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%; display: inline-block; vertical-align: bottom;">${store}</a></div>`;
+        
+        let brand = store;
+        try {
+          let hostname = store;
+          if (store.startsWith('http://') || store.startsWith('https://')) {
+            hostname = new URL(store).hostname;
+          }
+          hostname = hostname.replace(/^www\./i, '');
+          const parts = hostname.split('.');
+          if (parts.length > 0) brand = parts[0];
+        } catch {}
+
+        const adsUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent('"' + brand + '"')}&search_type=keyword_unordered`;
+
+        return `
+          <div class="shopify-item" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 2mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%;">
+              <div class="shopify-dot"></div> 
+              <a href="${url}" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dotted #cbd5e1; font-weight: 500; font-size: 11px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${store}</a>
+            </div>
+            <a href="${adsUrl}" target="_blank" style="color: #6366f1; text-decoration: none; font-size: 9px; font-weight: 700; border: 1px solid #e0e7ff; background-color: #f5f7ff; padding: 2px 6px; border-radius: 4px; white-space: nowrap; display: inline-block; line-height: 1;">Ads ↗</a>
+          </div>
+        `;
       }).join('') + `</div>`
     : '<div style="font-size: 11px; color: #94a3b8; font-style: italic;">No live competitor URLs found</div>';
 
