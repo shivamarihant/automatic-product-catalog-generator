@@ -114,8 +114,9 @@ async function fetchCompetitorUrlsViaSerper(productName: string): Promise<string
   ];
 
   const queries = [
-    `${productName} buy online india -amazon -flipkart -meesho`,
-    `${productName} shopify store india`
+    `site:.in inurl:/products/ "${productName}"`,
+    `site:.co.in inurl:/products/ "${productName}"`,
+    `"powered by shopify" site:.in "${productName}"`
   ];
 
   const found: string[] = [];
