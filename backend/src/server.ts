@@ -142,7 +142,7 @@ app.post('/api/catalog/generate/:productId', async (req, res) => {
     }
 
     console.log(`Step 1: Fetching Market Intelligence for ${product.productName}...`);
-    const fetchedData = await fetchMarketIntelligence(product.productName);
+    const fetchedData = await fetchMarketIntelligence(product.productName, product.simplifiedName);
 
     // Sync with actual researched marketplace sellers and ads count
     if (product.marketplaceSellers) {
