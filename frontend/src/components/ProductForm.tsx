@@ -10,6 +10,7 @@ interface ProductFormProps {
 export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) => {
   const [activeTab, setActiveTab] = useState<'basic' | 'competition' | 'logistics'>('basic');
   const [productName, setProductName] = useState('');
+  const [simplifiedName, setSimplifiedName] = useState('');
   const [cost, setCost] = useState<number>(0);
   const [moq, setMoq] = useState<number>(100);
   const [tentativeSellingPrice, setTentativeSellingPrice] = useState<number>(0);
@@ -56,6 +57,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
       setJiomartSellers(data.jiomart);
       setShopifyStores(data.shopifyStores.length > 0 ? data.shopifyStores : ['']);
       setAdsCount(data.adsCount);
+      setSimplifiedName(data.simplifiedName || '');
     } catch (err: any) {
       setValidationError(err.message || 'AI competitor analysis failed. Please verify API key.');
     } finally {
@@ -151,6 +153,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
 
     const payload: ProductInput = {
       productName,
+      simplifiedName,
       images,
       cost,
       moq,

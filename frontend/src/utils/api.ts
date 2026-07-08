@@ -5,6 +5,7 @@ export const BACKEND_URL = window.location.hostname === 'localhost' || window.lo
 export interface ProductInput {
   _id?: string;
   productName: string;
+  simplifiedName?: string;
   images: string[];
   cost: number;
   moq: number;
@@ -51,6 +52,7 @@ export interface Catalog {
   catalogTitle: string;
   logoUrl?: string;
   pdfPath?: string;
+  simplifiedName?: string;
   fetchedData?: {
     amazonBestSellerCountries: string[];
     firstMoverAdvantage: 'YES' | 'MEDIUM' | 'LOW';
@@ -166,6 +168,7 @@ export interface AiCompetitorResponse {
   jiomart: number;
   shopifyStores: string[];
   adsCount: number;
+  simplifiedName: string;
 }
 
 export async function fetchAiCompetitorAnalysis(productName: string, images?: string[]): Promise<AiCompetitorResponse> {

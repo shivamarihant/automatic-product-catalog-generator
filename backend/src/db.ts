@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 export interface Product {
   _id: string;
   productName: string;
+  simplifiedName?: string;
   images: string[];
   cost: number;
   moq: number;
@@ -60,6 +61,7 @@ export interface Catalog {
 // Mongoose Schemas (for production MongoDB)
 const ProductSchema = new mongoose.Schema({
   productName: { type: String, required: true },
+  simplifiedName: { type: String },
   images: [String],
   cost: { type: Number, required: true },
   moq: { type: Number, required: true },
