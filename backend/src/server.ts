@@ -24,6 +24,7 @@ import { getCatalogTemplateHtml } from './services/templates';
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', true);
 const PORT = process.env.PORT || 5001;
 
 // Middlewares
@@ -82,7 +83,7 @@ app.post('/api/upload', upload.array('images', 10), (req, res) => {
     }
 
     const host = req.get('host');
-    const protocol = req.protocol;
+    const protocol = (req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https') ? 'https' : 'http';
     const filePaths = files.map(file => `${protocol}://${host}/uploads/${file.filename}`);
 
     return res.status(200).json({ urls: filePaths });
@@ -242,7 +243,7 @@ app.post('/api/catalog/generate/:productId', async (req, res) => {
 
     // Save PDF server URL on the Catalog record
     const host = req.get('host');
-    const protocol = req.protocol;
+    const protocol = (req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https') ? 'https' : 'http';
     savedCatalog.pdfPath = `${protocol}://${host}/uploads/catalogs/${dateFolder}/${pdfFileName}`;
     const finalizedCatalog = await saveCatalog(savedCatalog);
 

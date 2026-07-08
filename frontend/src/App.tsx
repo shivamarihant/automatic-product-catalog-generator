@@ -30,6 +30,16 @@ const CHECKPOINTS = [
   'Compiling A4 pixel-perfect PDF catalog...'
 ];
 
+const getSecureUrl = (url: string) => {
+  if (!url) return '';
+  if (window.location.protocol === 'https:' && url.startsWith('http://')) {
+    if (!url.includes('localhost') && !url.includes('127.0.0.1')) {
+      return url.replace('http://', 'https://');
+    }
+  }
+  return url;
+};
+
 function App() {
   const [products, setProducts] = useState<ProductInput[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<ProductInput | null>(null);
@@ -307,7 +317,7 @@ function App() {
                       {/* Image Header with Score Overlay */}
                       <div className="aspect-[4/3] bg-slate-50 dark:bg-zinc-950 overflow-hidden relative border-b border-slate-100 dark:border-zinc-800">
                         <img 
-                          src={prod.images[0]} 
+                          src={getSecureUrl(prod.images[0])} 
                           alt="Product" 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
                           onError={(e) => {

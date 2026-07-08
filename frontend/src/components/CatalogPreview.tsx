@@ -19,6 +19,16 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const printableAreaRef = useRef<HTMLDivElement>(null);
 
+  const getSecureUrl = (url: string) => {
+    if (!url) return '';
+    if (window.location.protocol === 'https:' && url.startsWith('http://')) {
+      if (!url.includes('localhost') && !url.includes('127.0.0.1')) {
+        return url.replace('http://', 'https://');
+      }
+    }
+    return url;
+  };
+
   const formattedDate = new Date(catalog.createdAt).toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'long',
@@ -60,7 +70,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                 {/* Main Image with Arrows */}
                 <div className="relative rounded-xl overflow-hidden border border-slate-100 bg-slate-50 aspect-[14/7] mb-2 group">
                   <img
-                    src={product.images[activeImageIndex]}
+                    src={getSecureUrl(product.images[activeImageIndex])}
                     alt={`Product ${activeImageIndex + 1}`}
                     className="w-full h-full object-contain transition-all duration-300"
                   />
@@ -120,7 +130,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                             : 'border-transparent opacity-60 hover:opacity-100 hover:border-slate-300'
                         }`}
                       >
-                        <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+                        <img src={getSecureUrl(img)} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
                       </button>
                     ))}
                   </div>
@@ -130,7 +140,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                 <div className="hidden print:grid print:grid-cols-3 print:gap-2 print:mt-2">
                   {product.images.slice(1).map((img, idx) => (
                     <div key={idx} className="aspect-[4/3] rounded-lg overflow-hidden border border-slate-100 bg-slate-50">
-                      <img src={img} alt={`Product ${idx + 2}`} className="w-full h-full object-cover" />
+                      <img src={getSecureUrl(img)} alt={`Product ${idx + 2}`} className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>
