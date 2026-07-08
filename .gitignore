@@ -48,7 +48,7 @@ frontend/.env
 backend/uploads/
 
 # Local JSON database
-# backend/data/*.json
+backend/data/*.json
 
 # Framework and bundler caches
 .cache/
