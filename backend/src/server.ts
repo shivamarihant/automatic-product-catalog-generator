@@ -32,7 +32,11 @@ app.use(cors({ origin: '*' })); // Enable CORS for React frontend
 app.use(express.json());
 
 // Setup Upload Directories
-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+// On Railway, RAILWAY_VOLUME_MOUNT_PATH points to /app/uploads (persistent volume).
+// Locally it falls back to the dist/../uploads relative path.
+const UPLOADS_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH)
+  : path.join(__dirname, '..', 'uploads');
 const CATALOGS_DIR = path.join(UPLOADS_DIR, 'catalogs');
 
 if (!fs.existsSync(UPLOADS_DIR)) {
