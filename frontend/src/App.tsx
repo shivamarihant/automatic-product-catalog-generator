@@ -343,6 +343,43 @@ function App() {
                           </div>
                         </div>
 
+                        {/* Sourcing Opportunity Score Spectrum Bar */}
+                        {prod.calculations && (
+                          <div className="mb-4">
+                            <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2.5">
+                              <span>Sourcing Opportunity</span>
+                            </div>
+                            
+                            {/* Color Spectrum Gradient Bar */}
+                            <div className="h-1.5 w-full rounded-full bg-gradient-to-r from-red-500 via-yellow-400 to-emerald-500 mb-2.5 relative">
+                              {/* Slide marker indicator corresponding to the score location */}
+                              <div 
+                                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-zinc-800 border-2 border-slate-900 dark:border-zinc-100 rounded-full shadow-sm"
+                                style={{ left: `calc(${prod.calculations.opportunityScore}% - 6px)` }}
+                              />
+                            </div>
+                            
+                            {/* Spectrum Status Pill Labels */}
+                            <div className="flex items-center justify-between gap-1 text-[8px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mt-1 relative">
+                              {(() => {
+                                const score = prod.calculations.opportunityScore;
+                                const isLow = score < 50;
+                                const isMed = score >= 50 && score < 70;
+                                const isHigh = score >= 70 && score < 85;
+                                const isVeryHigh = score >= 85;
+                                return (
+                                  <>
+                                    <span className={`px-2 py-0.5 rounded-full transition-all ${isLow ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-black shadow-sm' : ''}`}>Low</span>
+                                    <span className={`px-2 py-0.5 rounded-full transition-all ${isMed ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-black shadow-sm' : ''}`}>Medium</span>
+                                    <span className={`px-2 py-0.5 rounded-full transition-all ${isHigh ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-black shadow-sm' : ''}`}>High</span>
+                                    <span className={`px-2 py-0.5 rounded-full transition-all ${isVeryHigh ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-black shadow-sm' : ''}`}>Very High</span>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Badges Row */}
                         <div className="flex flex-wrap items-center gap-2">
                           {prod.calculations && (

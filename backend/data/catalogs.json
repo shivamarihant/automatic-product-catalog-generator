@@ -27,5 +27,34 @@
     "_id": "6a4de496eaa66ed243c20909",
     "createdAt": "2026-07-08T05:48:06.648Z",
     "pdfPath": "http://localhost:5001/uploads/catalogs/2026-07-08/catalog-6a4de496eaa66ed243c20909.pdf"
+  },
+  {
+    "productId": "6a4deb4b7824cc71bae7e114",
+    "preparedBy": "Global Sourcing Lead",
+    "catalogTitle": "Market Feasibility & Landed Cost Report",
+    "logoUrl": "",
+    "fetchedData": {
+      "amazonBestSellerCountries": [
+        "India",
+        "USA",
+        "UK",
+        "Canada",
+        "Germany"
+      ],
+      "firstMoverAdvantage": "YES",
+      "estimatedCompetition": "Low",
+      "approxSellers": 10,
+      "metaAdsCount": 7
+    },
+    "calculations": {
+      "margin": 0,
+      "marginPercentage": 0,
+      "netProfit": -50,
+      "opportunityScore": 55
+    },
+    "aiRecommendation": "Given a moderate opportunity score of 55/100, this product presents a first mover advantage with low competition (approximately 10 sellers) and strong international demand across India, USA, UK, Canada, and Germany. However, the current 0% calculated margin resulting in a net loss of ₹-50 per unit makes this opportunity financially unviable as presented. A critical re-evaluation of sourcing costs is essential to achieve a profitable margin, despite the 20% RTO rate, to effectively capitalize on the existing market demand and favorable competitive landscape for a successful launch in India.",
+    "_id": "6a4deb527824cc71bae7e115",
+    "createdAt": "2026-07-08T06:16:50.135Z",
+    "pdfPath": "http://localhost:5001/uploads/catalogs/2026-07-08/catalog-6a4deb527824cc71bae7e115.pdf"
   }
 ]

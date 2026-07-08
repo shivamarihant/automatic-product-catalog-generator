@@ -246,7 +246,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Product Cost (₹ Landed)</label>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Product Cost (₹ Landing Price by Air)</label>
                 <input
                   type="number"
                   min="0"
