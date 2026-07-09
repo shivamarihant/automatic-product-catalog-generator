@@ -12,7 +12,8 @@ import {
   getAllProducts, 
   saveCatalog, 
   getCatalog,
-  getCatalogsByProduct
+  getCatalogsByProduct,
+  clearAllCatalogs
 } from './db';
 import { fetchMarketIntelligence } from './services/scraper';
 import { performCalculations } from './services/calculations';
@@ -328,6 +329,16 @@ app.post('/api/products/ai-research', async (req, res) => {
     }
     const analysis = await analyzeCompetitorsWithAI(productName, images);
     return res.status(200).json(analysis);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// 9. Clear All Catalogs (Temporary Production Migration Endpoint)
+app.delete('/api/catalog/clear-all-production-data', async (req, res) => {
+  try {
+    const result = await clearAllCatalogs();
+    return res.status(200).json(result);
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
