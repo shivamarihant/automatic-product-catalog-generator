@@ -64,7 +64,7 @@ export const OpportunityMeter: React.FC<OpportunityMeterProps> = ({ score }) => 
       </div>
 
       <p className="text-xs text-slate-400 mt-4 leading-relaxed max-w-[240px]">
-        Calculated dynamically based on gross profit margin %, local logistics RTO risk, Amazon international traction, and Meta ads volume.
+        Calculated dynamically based on Gross Margin, First-Mover Advantage, Shopify traction, RTO risk, listings volume, Upsell & Bundle Potential, and Lower CAC.
       </p>
     </div>
   );

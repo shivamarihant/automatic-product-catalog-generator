@@ -1,6 +1,6 @@
 export async function generateRecommendation(productData: any): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
-  const { productName, cost, tentativeSellingPrice, fetchedData, calculations, logistics, rtoPercentage, adsCount } = productData;
+  const { productName, cost, tentativeSellingPrice, fetchedData, calculations, logistics, rtoPercentage, adsCount, upsellPotential, lowerCac } = productData;
 
   const marginPct = calculations?.marginPercentage || 0;
   const netProfit = calculations?.netProfit || 0;
@@ -20,6 +20,8 @@ export async function generateRecommendation(productData: any): Promise<string> 
     Shipping Cost: ₹${logistics?.shippingCost || 0}
     RTO Percentage: ${rtoPercentage}%
     First Mover Advantage: ${firstMover} (Estimated Competition: ${competition}, Approx Sellers: ${approxSellers})
+    Upsell & Bundle Potential (AOV & LTV Growth): ${upsellPotential || 'MEDIUM'}
+    Lower CAC: ${lowerCac || 'MEDIUM'}
     Amazon Best Seller Countries: ${countries.join(', ')}
     Meta Ads Running: ${adsCount} Ads
     Opportunity Score: ${oppScore}/100
@@ -104,7 +106,7 @@ async function getSimplifiedProductName(productName: string, images: string[]): 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     // Fallback: extract the first segment before common punctuation, cap at 4 words
-    const clean = productName.split(/[|\-—–]/)[0].trim();
+    const clean = productName.split(/[|—–:]| \- /)[0].trim();
     return clean.split(/\s+/).slice(0, 4).join(' ');
   }
 
@@ -157,12 +159,13 @@ Respond ONLY with the clean simplified product query. Do not include markdown, e
     console.error('[Gemini] Error simplifying product name:', err.message);
   }
 
-  const clean = productName.split(/[|\-—–]/)[0].trim();
+  const clean = productName.split(/[|—–:]| \- /)[0].trim();
   return clean.split(/\s+/).slice(0, 4).join(' ');
 }
 
 // ─── Serper.dev: find real competitor product URLs via Google Image Search ────
-async function fetchCompetitorUrlsViaSerper(productName: string): Promise<string[]> {
+// ─── Serper.dev: find real competitor product URLs via standard Google Search ────
+async function fetchCompetitorUrlsViaSerper(productName: string, originalName?: string): Promise<string[]> {
   const serperKey = process.env.SERPER_API_KEY;
   if (!serperKey) {
     console.warn('[Serper] SERPER_API_KEY not set. Skipping real URL fetch.');
@@ -172,54 +175,87 @@ async function fetchCompetitorUrlsViaSerper(productName: string): Promise<string
   const MARKETPLACE_BLACKLIST = [
     'amazon.', 'flipkart.', 'meesho.', 'snapdeal.', 'jiomart.',
     'myntra.', 'ajio.', 'nykaa.', 'indiamart.', 'wikipedia.',
-    'youtube.', 'instagram.', 'facebook.', 'twitter.', 'pinterest.'
-  ];
-
-  const queries = [
-    `site:.in inurl:/products/ "${productName}"`,
-    `site:.co.in inurl:/products/ "${productName}"`,
-    `"powered by shopify" site:.in "${productName}"`
+    'youtube.', 'instagram.', 'facebook.', 'twitter.', 'pinterest.',
+    'linkedin.', 'reddit.', 'quora.', 'ebay.', 'aliexpress.', 'etsy.',
+    'walmart.', 'target.', 'indiamart.', 'justdial.', 'alibaba.',
+    'tradeindia.', 'glassdoor.', 'ambitionbox.', 'dhgate.', 'banggood.',
+    'temu.', 'shein.', 'indiamart.'
   ];
 
   const found: string[] = [];
 
-  for (const q of queries) {
+  // Helper to fetch from a specific Serper endpoint
+  const runQuery = async (query: string, endpoint: 'search' | 'images') => {
     try {
-      console.log(`[Serper Image Search] Searching: ${q}`);
-      const res = await fetch('https://google.serper.dev/images', {
+      console.log(`[Serper] Querying ${endpoint} with: "${query}"`);
+      const res = await fetch(`https://google.serper.dev/${endpoint}`, {
         method: 'POST',
         headers: {
           'X-API-KEY': serperKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ q, gl: 'in', hl: 'en', num: 15 })
+        body: JSON.stringify({ q: query, gl: 'in', hl: 'en', num: 15 })
       });
-
       if (!res.ok) {
-        const txt = await res.text();
-        console.error(`[Serper Image Search] Failed (${res.status}):`, txt);
-        continue;
+        const text = await res.text();
+        console.warn(`[Serper] Query failed (${res.status}): ${text.slice(0, 200)}`);
+        return;
       }
 
       const data = await res.json();
-      const results: any[] = data?.images || [];
+      const results = endpoint === 'search' ? (data.organic || []) : (data.images || []);
 
       for (const r of results) {
         const url: string = r.link || '';
-        const isBlocked = MARKETPLACE_BLACKLIST.some(m => url.includes(m));
+        const isBlocked = MARKETPLACE_BLACKLIST.some(m => url.toLowerCase().includes(m));
         if (!isBlocked && url.startsWith('http') && !found.includes(url) && found.length < 3) {
-          console.log(`[Serper Image Search] ✓ Found competitor URL: ${url}`);
+          console.log(`[Serper ${endpoint}] ✓ Found competitor URL: ${url}`);
           found.push(url);
         }
       }
-
-      if (found.length >= 3) break;
     } catch (err: any) {
-      console.error('[Serper Image Search] Error:', err.message);
+      console.warn(`[Serper ${endpoint}] error:`, err.message);
+    }
+  };
+
+  // Generate standard queries for a term (NO advanced search operators to avoid 400 Query Pattern limits)
+  const getQueriesForTerm = (term: string) => [
+    `${term} shopify`,
+    `${term} myshopify`,
+    `buy ${term} shopify`
+  ];
+
+  // Phase 1: Try with simplified name (productName)
+  const term1 = productName.trim();
+  if (term1) {
+    const qs = getQueriesForTerm(term1);
+    for (const q of qs) {
+      if (found.length >= 3) break;
+      await runQuery(q, 'search');
     }
   }
 
-  console.log(`[Serper Image Search] Total real competitor URLs found: ${found.length}`);
+  // Phase 2 Fallback: Try with cleaned original name
+  if (found.length < 3 && originalName) {
+    const cleanOriginal = originalName.split(/[|—–:]| \- /)[0].trim().split(/\s+/).slice(0, 6).join(' ');
+    if (cleanOriginal && cleanOriginal.toLowerCase() !== term1.toLowerCase()) {
+      console.log(`[Serper Fallback] Sourcing empty, trying clean original name: "${cleanOriginal}"`);
+      const qs = getQueriesForTerm(cleanOriginal);
+      for (const q of qs) {
+        if (found.length >= 3) break;
+        await runQuery(q, 'search');
+      }
+    }
+  }
+
+  // Phase 3 Fallback: Try images if search returned nothing
+  if (found.length < 3 && term1) {
+    console.log(`[Serper Fallback] Search empty, trying standard image search for: "${term1}"`);
+    const q = `${term1} shopify`;
+    await runQuery(q, 'images');
+  }
+
+  console.log(`[Serper] Competitor URL search found ${found.length} links`);
   return found;
 }
 
@@ -238,12 +274,12 @@ async function countMarketplaceSellersViaSerper(productName: string): Promise<{
     return { amazon: 0, flipkart: 0, meesho: 0, jiomart: 0, adsCount: 0 };
   }
 
-  const serperSearch = async (query: string): Promise<{ organic: number; total: number }> => {
+  const serperSearch = async (query: string, domainPattern: string): Promise<{ organic: number; total: number }> => {
     try {
       const res = await fetch('https://google.serper.dev/search', {
         method: 'POST',
         headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: query, gl: 'in', hl: 'en', num: 10 })
+        body: JSON.stringify({ q: query, gl: 'in', hl: 'en', num: 15 })
       });
       if (!res.ok) {
         const err = await res.text();
@@ -251,10 +287,19 @@ async function countMarketplaceSellersViaSerper(productName: string): Promise<{
         return { organic: 0, total: 0 };
       }
       const data = await res.json();
+      const organicList = data.organic || [];
+      const matchingOrganic = organicList.filter((item: any) => {
+        const link = item.link || '';
+        return link.toLowerCase().includes(domainPattern.toLowerCase());
+      });
+
       const rawTotal = data.searchInformation?.totalResults || '0';
       const total = parseInt(rawTotal.replace(/,/g, '').replace(/\./g, ''), 10) || 0;
-      const organic = (data.organic || []).length;
-      return { organic, total };
+
+      return {
+        organic: matchingOrganic.length,
+        total: total > 0 ? Math.round(total * (matchingOrganic.length / Math.max(1, organicList.length))) : 0
+      };
     } catch (err: any) {
       console.error('[Serper] Network error:', err.message);
       return { organic: 0, total: 0 };
@@ -264,11 +309,11 @@ async function countMarketplaceSellersViaSerper(productName: string): Promise<{
   console.log(`[Serper] Counting real marketplace sellers for: "${productName}"`);
 
   const [amazonData, flipkartData, meeshoData, jiomartData, adsData] = await Promise.all([
-    serperSearch(`site:amazon.in "${productName}"`),
-    serperSearch(`site:flipkart.com "${productName}"`),
-    serperSearch(`site:meesho.com "${productName}"`),
-    serperSearch(`site:jiomart.com "${productName}"`),
-    serperSearch(`"${productName}" facebook ads`)
+    serperSearch(`amazon.in ${productName}`, `amazon.`),
+    serperSearch(`flipkart.com ${productName}`, `flipkart.com`),
+    serperSearch(`meesho.com ${productName}`, `meesho.com`),
+    serperSearch(`jiomart.com ${productName}`, `jiomart.com`),
+    serperSearch(`${productName} facebook ads`, `facebook.com`)
   ]);
 
   const normalize = (data: { organic: number; total: number }, divisor: number, cap: number): number => {
@@ -277,11 +322,11 @@ async function countMarketplaceSellersViaSerper(productName: string): Promise<{
   };
 
   const result = {
-    amazon:   normalize(amazonData,   5, 9999),
-    flipkart: normalize(flipkartData, 4, 9999),
-    meesho:   normalize(meeshoData,   3, 9999),
-    jiomart:  normalize(jiomartData,  3, 9999),
-    adsCount: normalize(adsData,      8, 9999)
+    amazon:   normalize(amazonData,   3, 9999),
+    flipkart: normalize(flipkartData, 3, 9999),
+    meesho:   normalize(meeshoData,   2, 9999),
+    jiomart:  normalize(jiomartData,  2, 9999),
+    adsCount: normalize(adsData,      4, 9999)
   };
 
   console.log(`[Serper] Real counts — Amazon: ${result.amazon}, Flipkart: ${result.flipkart}, Meesho: ${result.meesho}, JioMart: ${result.jiomart}, Ads: ${result.adsCount}`);
@@ -307,7 +352,7 @@ export async function analyzeCompetitorsWithAI(productName: string, images?: str
   // Run both fetches using the simplified name in parallel
   const [counts, serperUrls] = await Promise.all([
     countMarketplaceSellersViaSerper(simplifiedName),
-    fetchCompetitorUrlsViaSerper(simplifiedName)
+    fetchCompetitorUrlsViaSerper(simplifiedName, productName)
   ]);
 
   const shopifyStores = serperUrls.length > 0

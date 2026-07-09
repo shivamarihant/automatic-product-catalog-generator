@@ -171,7 +171,10 @@ app.post('/api/catalog/generate/:productId', async (req, res) => {
       product.logistics.shippingCost,
       product.rtoPercentage,
       fetchedData.firstMoverAdvantage,
-      fetchedData.amazonBestSellerCountries
+      product.shopifyStores || [],
+      product.marketplaceSellers || { amazon: 0, flipkart: 0, meesho: 0, jiomart: 0 },
+      product.upsellPotential || 'MEDIUM',
+      product.lowerCac || 'MEDIUM'
     );
 
     // Auto-populate ads count if not entered manually

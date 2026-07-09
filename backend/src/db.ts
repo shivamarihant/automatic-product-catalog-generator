@@ -29,6 +29,8 @@ export interface Product {
   };
   tentativeSellingPrice: number;
   rtoPercentage: number;
+  upsellPotential?: 'YES' | 'MEDIUM' | 'LOW';
+  lowerCac?: 'YES' | 'MEDIUM' | 'LOW';
   fetchedData: {
     amazonBestSellerCountries: string[];
     firstMoverAdvantage: 'YES' | 'MEDIUM' | 'LOW';
@@ -84,6 +86,8 @@ const ProductSchema = new mongoose.Schema({
   },
   tentativeSellingPrice: { type: Number, required: true },
   rtoPercentage: { type: Number, required: true },
+  upsellPotential: { type: String, enum: ['YES', 'MEDIUM', 'LOW'], default: 'MEDIUM' },
+  lowerCac: { type: String, enum: ['YES', 'MEDIUM', 'LOW'], default: 'MEDIUM' },
   fetchedData: {
     amazonBestSellerCountries: [String],
     firstMoverAdvantage: { type: String, enum: ['YES', 'MEDIUM', 'LOW'], default: 'MEDIUM' },

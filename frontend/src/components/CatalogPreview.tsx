@@ -224,6 +224,34 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                     )}
                   </td>
                 </tr>
+                <tr>
+                  <td className="py-3.5 px-2 font-semibold text-slate-700">Upsell & Bundle Potential</td>
+                  <td className="py-3.5 px-2 text-slate-500">AOV & LTV Growth potential</td>
+                  <td className="py-3.5 px-2 font-bold text-slate-900 text-right">{product.upsellPotential || 'MEDIUM'}</td>
+                  <td className="py-3.5 px-2 text-right">
+                    {product.upsellPotential === 'YES' ? (
+                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-md">High Potential</span>
+                    ) : product.upsellPotential === 'MEDIUM' ? (
+                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-yellow-50 text-yellow-700 border border-yellow-100 rounded-md">Medium</span>
+                    ) : (
+                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-100 rounded-md">Low</span>
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-2 font-semibold text-slate-700">Lower CAC</td>
+                  <td className="py-3.5 px-2 text-slate-500">Customer Acquisition Cost benefit</td>
+                  <td className="py-3.5 px-2 font-bold text-slate-900 text-right">{product.lowerCac || 'MEDIUM'}</td>
+                  <td className="py-3.5 px-2 text-right">
+                    {product.lowerCac === 'YES' ? (
+                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-md">High Advantage</span>
+                    ) : product.lowerCac === 'MEDIUM' ? (
+                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-yellow-50 text-yellow-700 border border-yellow-100 rounded-md">Medium</span>
+                    ) : (
+                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-100 rounded-md">Low</span>
+                    )}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -273,45 +301,19 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                 </div>
 
                 <div>
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">Competitor Product Links</h3>
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">Competitor Shopify Store Links</h3>
                   {product.shopifyStores.length > 0 ? (
                     <div className="space-y-2">
                       {product.shopifyStores.map((store, idx) => {
                         const isNotFound = store.includes('No live competitor URLs found');
-                        const extractBrandName = (url: string): string => {
-                          try {
-                            let hostname = url;
-                            if (url.startsWith('http://') || url.startsWith('https://')) {
-                              hostname = new URL(url).hostname;
-                            }
-                            hostname = hostname.replace(/^www\./i, '');
-                            const parts = hostname.split('.');
-                            return parts.length > 0 ? parts[0] : hostname;
-                          } catch {
-                            return url;
-                          }
-                        };
-                        const brand = extractBrandName(store);
                         return (
-                          <div key={idx} className="bg-blue-50/30 border border-blue-100/50 px-3 py-2 rounded-lg text-xs flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 truncate">
-                              <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                              {isNotFound ? (
-                                <span className="text-slate-500 font-medium">{store}</span>
-                              ) : (
-                                <a href={store.startsWith('http') ? store : `https://${store}`} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-blue-700 hover:text-blue-800 hover:underline transition-all">
-                                  {store}
-                                </a>
-                              )}
-                            </div>
-                            {!isNotFound && (
-                              <a
-                                href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(brand)}&search_type=keyword_unordered`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[10px] font-extrabold text-purple-700 hover:text-purple-900 bg-white hover:bg-purple-50 px-2 py-0.5 rounded border border-purple-200 transition-all shrink-0 shadow-sm"
-                              >
-                                View Ads ↗
+                          <div key={idx} className="bg-blue-50/30 border border-blue-100/50 px-3 py-2 rounded-lg text-xs flex items-center gap-2">
+                            <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                            {isNotFound ? (
+                              <span className="text-slate-500 font-medium">{store}</span>
+                            ) : (
+                              <a href={store.startsWith('http') ? store : `https://${store}`} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-blue-700 hover:text-blue-800 hover:underline transition-all">
+                                {store}
                               </a>
                             )}
                           </div>

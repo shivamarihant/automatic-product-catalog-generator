@@ -28,6 +28,8 @@ export interface ProductInput {
   };
   tentativeSellingPrice: number;
   rtoPercentage: number;
+  upsellPotential?: 'YES' | 'MEDIUM' | 'LOW';
+  lowerCac?: 'YES' | 'MEDIUM' | 'LOW';
   fetchedData?: {
     amazonBestSellerCountries: string[];
     firstMoverAdvantage: 'YES' | 'MEDIUM' | 'LOW';
@@ -53,6 +55,8 @@ export interface Catalog {
   logoUrl?: string;
   pdfPath?: string;
   simplifiedName?: string;
+  upsellPotential?: 'YES' | 'MEDIUM' | 'LOW';
+  lowerCac?: 'YES' | 'MEDIUM' | 'LOW';
   fetchedData?: {
     amazonBestSellerCountries: string[];
     firstMoverAdvantage: 'YES' | 'MEDIUM' | 'LOW';

@@ -57,27 +57,11 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
           return `<div class="shopify-item"><div class="shopify-dot" style="background-color: #94a3b8;"></div> <span style="font-size: 11px; color: #64748b; font-style: italic;">No live competitor URLs found</span></div>`;
         }
         const url = store.startsWith('http') ? store : `https://${store}`;
-        
-        let brand = store;
-        try {
-          let hostname = store;
-          if (store.startsWith('http://') || store.startsWith('https://')) {
-            hostname = new URL(store).hostname;
-          }
-          hostname = hostname.replace(/^www\./i, '');
-          const parts = hostname.split('.');
-          if (parts.length > 0) brand = parts[0];
-        } catch {}
-
-        const adsUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(brand)}&search_type=keyword_unordered`;
 
         return `
-          <div class="shopify-item" style="justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 2mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%;">
-              <div class="shopify-dot"></div> 
-              <a href="${url}" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dotted #cbd5e1; font-weight: 500; font-size: 11px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${store}</a>
-            </div>
-            <a href="${adsUrl}" target="_blank" style="color: #6366f1; text-decoration: none; font-size: 9px; font-weight: 700; border: 1px solid #e0e7ff; background-color: #f5f7ff; padding: 2px 6px; border-radius: 4px; white-space: nowrap; display: inline-block; line-height: 1;">Ads ↗</a>
+          <div class="shopify-item">
+            <div class="shopify-dot"></div> 
+            <a href="${url}" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dotted #cbd5e1; font-weight: 500; font-size: 11px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${store}</a>
           </div>
         `;
       }).join('') + `</div>`
@@ -644,6 +628,30 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
               : '<span class="badge badge-green">Healthy</span>'
           }</td>
         </tr>
+        <tr>
+          <td>Upsell & Bundle Potential</td>
+          <td>AOV & LTV Growth potential</td>
+          <td>${product.upsellPotential || 'MEDIUM'}</td>
+          <td>${
+            product.upsellPotential === 'YES'
+              ? '<span class="badge badge-green">High Potential</span>'
+              : product.upsellPotential === 'MEDIUM'
+              ? '<span class="badge badge-yellow">Medium</span>'
+              : '<span class="badge badge-red">Low</span>'
+          }</td>
+        </tr>
+        <tr>
+          <td>Lower CAC</td>
+          <td>Customer Acquisition Cost benefit</td>
+          <td>${product.lowerCac || 'MEDIUM'}</td>
+          <td>${
+            product.lowerCac === 'YES'
+              ? '<span class="badge badge-green">High Advantage</span>'
+              : product.lowerCac === 'MEDIUM'
+              ? '<span class="badge badge-yellow">Medium</span>'
+              : '<span class="badge badge-red">Low</span>'
+          }</td>
+        </tr>
       </tbody>
     </table>
 
@@ -683,7 +691,7 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
           </div>
         </div>
 
-        <div class="section-title" style="margin-top: 5mm;">Competitor Product Links</div>
+        <div class="section-title" style="margin-top: 5mm;">Competitor Shopify Store Links</div>
         ${shopifyHtml}
 
         <div class="section-title" style="margin-top: 5mm;">Meta Ads Density</div>
@@ -727,7 +735,7 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
             }
           </div>
           <div class="opportunity-comment">
-            Based on gross profit margin %, estimated RTO metrics, global marketplace indexes, and Meta Ads catalog saturation.
+            Based on Gross Margin, First-Mover Advantage, Shopify stores traction, RTO risk, marketplace listings, Upsell/Bundle potential, and Lower CAC.
           </div>
         </div>
 

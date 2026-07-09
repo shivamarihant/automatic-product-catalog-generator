@@ -15,16 +15,18 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
   const [moq, setMoq] = useState<number>(100);
   const [tentativeSellingPrice, setTentativeSellingPrice] = useState<number>(0);
   const [rtoPercentage, setRtoPercentage] = useState<number>(15);
+  const [upsellPotential, setUpsellPotential] = useState<'YES' | 'MEDIUM' | 'LOW'>('MEDIUM');
+  const [lowerCac, setLowerCac] = useState<'YES' | 'MEDIUM' | 'LOW'>('MEDIUM');
   
   // Market Sellers
-  const [amazonSellers, setAmazonSellers] = useState<number>(0);
-  const [flipkartSellers, setFlipkartSellers] = useState<number>(0);
-  const [meeshoSellers, setMeeshoSellers] = useState<number>(0);
-  const [jiomartSellers, setJiomartSellers] = useState<number>(0);
+  const [amazonSellers, setAmazonSellers] = useState<number | undefined>(undefined);
+  const [flipkartSellers, setFlipkartSellers] = useState<number | undefined>(undefined);
+  const [meeshoSellers, setMeeshoSellers] = useState<number | undefined>(undefined);
+  const [jiomartSellers, setJiomartSellers] = useState<number | undefined>(undefined);
 
   // Shopify Stores
   const [shopifyStores, setShopifyStores] = useState<string[]>(['']);
-  const [adsCount, setAdsCount] = useState<number>(0);
+  const [adsCount, setAdsCount] = useState<number | undefined>(undefined);
 
   // Logistics
   const [weight, setWeight] = useState('500g');
@@ -151,20 +153,41 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
       return;
     }
 
+    const blacklistedDomains = [
+      'amazon', 'flipkart', 'meesho', 'snapdeal', 'jiomart',
+      'myntra', 'ajio', 'nykaa', 'ebay', 'aliexpress', 'etsy',
+      'walmart', 'target', 'indiamart', 'justdial', 'alibaba',
+      'tradeindia', 'youtube', 'instagram', 'facebook', 'twitter', 'pinterest',
+      'linkedin', 'reddit', 'quora', 'glassdoor', 'ambitionbox'
+    ];
+    const nonWebsites = shopifyStores.filter(store => store.trim() !== '');
+    const hasMarketplace = nonWebsites.some(store => {
+      const lower = store.toLowerCase();
+      return blacklistedDomains.some(domain => lower.includes(domain));
+    });
+
+    if (hasMarketplace) {
+      setValidationError('Competitor URLs must be Shopify website URLs only. Marketplace links (Amazon, Flipkart, Meesho, etc.) or social media links are not allowed.');
+      setActiveTab('competition');
+      return;
+    }
+
     const payload: ProductInput = {
       productName,
       simplifiedName,
       images,
       cost,
       moq,
+      upsellPotential,
+      lowerCac,
       marketplaceSellers: {
-        amazon: amazonSellers,
-        flipkart: flipkartSellers,
-        meesho: meeshoSellers,
-        jiomart: jiomartSellers
+        amazon: amazonSellers ?? 0,
+        flipkart: flipkartSellers ?? 0,
+        meesho: meeshoSellers ?? 0,
+        jiomart: jiomartSellers ?? 0
       },
       shopifyStores: shopifyStores.filter(store => store.trim() !== ''),
-      adsCount,
+      adsCount: adsCount ?? 0,
       logistics: {
         weight,
         dimensions: { length, width, height },
@@ -269,6 +292,33 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Upsell & Bundle Potential (AOV & LTV Growth)</label>
+                <select
+                  value={upsellPotential}
+                  onChange={(e) => setUpsellPotential(e.target.value as 'YES' | 'MEDIUM' | 'LOW')}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100"
+                >
+                  <option value="YES">YES</option>
+                  <option value="MEDIUM">MEDIUM</option>
+                  <option value="LOW">LOW</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Lower CAC</label>
+                <select
+                  value={lowerCac}
+                  onChange={(e) => setLowerCac(e.target.value as 'YES' | 'MEDIUM' | 'LOW')}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100"
+                >
+                  <option value="YES">YES</option>
+                  <option value="MEDIUM">MEDIUM</option>
+                  <option value="LOW">LOW</option>
+                </select>
+              </div>
+            </div>
+
             {/* Images Upload Zone */}
             <div>
               <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Product Images ({images.length}/10)</label>
@@ -349,8 +399,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
                   <input
                     type="number"
                     min="0"
-                    value={amazonSellers || ''}
-                    onChange={(e) => setAmazonSellers(Number(e.target.value))}
+                    value={amazonSellers ?? ''}
+                    onChange={(e) => setAmazonSellers(e.target.value === '' ? undefined : Number(e.target.value))}
                     placeholder="e.g. 12"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100 placeholder:text-slate-400"
                   />
@@ -360,8 +410,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
                   <input
                     type="number"
                     min="0"
-                    value={flipkartSellers || ''}
-                    onChange={(e) => setFlipkartSellers(Number(e.target.value))}
+                    value={flipkartSellers ?? ''}
+                    onChange={(e) => setFlipkartSellers(e.target.value === '' ? undefined : Number(e.target.value))}
                     placeholder="e.g. 8"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100 placeholder:text-slate-400"
                   />
@@ -371,8 +421,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
                   <input
                     type="number"
                     min="0"
-                    value={meeshoSellers || ''}
-                    onChange={(e) => setMeeshoSellers(Number(e.target.value))}
+                    value={meeshoSellers ?? ''}
+                    onChange={(e) => setMeeshoSellers(e.target.value === '' ? undefined : Number(e.target.value))}
                     placeholder="e.g. 6"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100 placeholder:text-slate-400"
                   />
@@ -382,8 +432,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
                   <input
                     type="number"
                     min="0"
-                    value={jiomartSellers || ''}
-                    onChange={(e) => setJiomartSellers(Number(e.target.value))}
+                    value={jiomartSellers ?? ''}
+                    onChange={(e) => setJiomartSellers(e.target.value === '' ? undefined : Number(e.target.value))}
                     placeholder="e.g. 3"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100 placeholder:text-slate-400"
                   />
@@ -436,8 +486,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
                 <input
                   type="number"
                   min="0"
-                  value={adsCount || ''}
-                  onChange={(e) => setAdsCount(Number(e.target.value))}
+                  value={adsCount ?? ''}
+                  onChange={(e) => setAdsCount(e.target.value === '' ? undefined : Number(e.target.value))}
                   placeholder="e.g. 15"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100 placeholder:text-slate-400"
                 />
