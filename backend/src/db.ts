@@ -296,3 +296,13 @@ export async function getCatalogsByProduct(productId: string): Promise<Catalog[]
     return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 }
+
+export async function clearAllCatalogs(): Promise<number> {
+  if (isUsingMongoDB && CatalogModel) {
+    const result = await CatalogModel.deleteMany({});
+    return result.deletedCount || 0;
+  } else {
+    writeJsonFile(CATALOGS_FILE, []);
+    return 0;
+  }
+}

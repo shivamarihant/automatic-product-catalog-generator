@@ -12,7 +12,8 @@ import {
   getAllProducts, 
   saveCatalog, 
   getCatalog,
-  getCatalogsByProduct
+  getCatalogsByProduct,
+  clearAllCatalogs
 } from './db';
 import { fetchMarketIntelligence } from './services/scraper';
 import { performCalculations } from './services/calculations';
@@ -328,6 +329,24 @@ app.post('/api/products/ai-research', async (req, res) => {
     }
     const analysis = await analyzeCompetitorsWithAI(productName, images);
     return res.status(200).json(analysis);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// 9. Clear Production Catalogs: POST /api/catalog/clear-production-only
+app.post('/api/catalog/clear-production-only', async (req, res) => {
+  try {
+    const mongoURI = process.env.MONGODB_URI || '';
+    const isProduction = mongoURI && !mongoURI.includes('localhost') && !mongoURI.includes('127.0.0.1');
+
+    if (!isProduction) {
+      return res.status(400).json({ error: 'This operation is restricted to the production environment.' });
+    }
+
+    const deletedCount = await clearAllCatalogs();
+    console.log(`[Admin] Cleared all ${deletedCount} catalogs from production database.`);
+    return res.status(200).json({ message: `Successfully cleared all ${deletedCount} catalogs from production database.` });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
