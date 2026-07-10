@@ -182,12 +182,11 @@ export async function fetchMarketIntelligence(productName: string, simplifiedNam
       estimatedCompetition = 'High';
     }
 
-    // Always ensure at least India is present if list is empty
-    if (countriesFound.size === 0) {
-      countriesFound.add('India');
-      if (approxSellers > 20) {
-        countriesFound.add('USA');
-      }
+    // Always include India — this tool is built for Indian importers, India is always a relevant market
+    countriesFound.add('India');
+    // If list is otherwise empty, also add USA as a global baseline
+    if (countriesFound.size === 1 && approxSellers > 20) {
+      countriesFound.add('USA');
     }
 
     // Fetch Meta Ads indexed library references
