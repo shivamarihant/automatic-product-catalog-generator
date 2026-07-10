@@ -138,19 +138,21 @@ export async function fetchMarketIntelligence(productName: string, simplifiedNam
         { domain: 'amazon.ae', country: 'UAE' },
       ];
 
-      // Search each domain in parallel (no quoted operators — free-tier compatible)
+      // Use site: operator per domain — only adds a country if the product genuinely appears on that marketplace
       const domainResults = await Promise.all(
         countryDomains.map(async ({ domain, country }) => {
           try {
             const res = await fetch('https://google.serper.dev/search', {
               method: 'POST',
               headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ q: `${domain} ${searchTerms}`, gl: 'in', hl: 'en', num: 5 })
+              body: JSON.stringify({ q: `site:${domain} ${searchTerms}`, gl: 'in', hl: 'en', num: 5 })
             });
             if (!res.ok) return null;
             const data = await res.json();
             const organic = data.organic || [];
-            const hasMatch = organic.some((item: any) => (item.link || '').toLowerCase().includes(domain));
+            // Has at least one result from this domain → product exists there
+            const hasMatch = organic.length > 0 && organic.some((item: any) => (item.link || '').toLowerCase().includes(domain));
+            console.log(`[Serper] ${country} (${domain}): ${hasMatch ? 'FOUND' : 'not found'} (${organic.length} results)`);
             return hasMatch ? country : null;
           } catch {
             return null;
@@ -182,11 +184,12 @@ export async function fetchMarketIntelligence(productName: string, simplifiedNam
       estimatedCompetition = 'High';
     }
 
-    // Always include India — this tool is built for Indian importers, India is always a relevant market
-    countriesFound.add('India');
-    // If list is otherwise empty, also add USA as a global baseline
-    if (countriesFound.size === 1 && approxSellers > 20) {
-      countriesFound.add('USA');
+    // If Serper found nothing at all, fall back to heuristics based on competition level
+    if (countriesFound.size === 0) {
+      countriesFound.add('India'); // default baseline for Indian importer context
+      if (approxSellers > 20) {
+        countriesFound.add('USA');
+      }
     }
 
     // Fetch Meta Ads indexed library references
