@@ -381,6 +381,11 @@ app.post('/api/catalog/clear-production-only', async (req, res) => {
   }
 });
 
+// Diagnostic Health Check: GET /api/health
+app.get('/api/health', (req, res) => {
+  return res.status(200).json({ status: 'OK', version: '95d719a-health', time: new Date().toISOString() });
+});
+
 // Start Server
 async function start() {
   await connectDB();
