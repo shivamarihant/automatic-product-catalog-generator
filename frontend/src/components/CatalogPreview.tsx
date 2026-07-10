@@ -8,6 +8,22 @@ interface CatalogPreviewProps {
   catalog: Catalog;
 }
 
+const getCleanAdsQuery = (name: string): string => {
+  if (!name) return '';
+  let clean = name.replace(/[()[\]{}]/g, ' ').replace(/\s+/g, ' ').trim();
+  const parts = clean.split(/\b(with|for|and|in|of|at|on|all|one|by|—|–|-|\||:)\b/i);
+  const subject = parts[0].trim();
+  const words = subject.split(/\s+/).filter(w => w.length > 1);
+  if (words.length >= 2) {
+    let lastWords = words.slice(-2);
+    if (lastWords[1].toLowerCase().match(/^(1pcs|2pcs|new|2026|pro|max|mini|lite)$/)) {
+      return words.slice(-3, -1).join(' ');
+    }
+    return lastWords.join(' ');
+  }
+  return subject;
+};
+
 export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProduct, catalog }) => {
   const product = {
     ...rawProduct,
@@ -330,7 +346,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                   <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100/60 p-2 rounded-xl flex items-center justify-between text-xs gap-4 shadow-sm">
                     <span className="text-purple-900 font-bold tracking-wide">Active Creatives in Meta Ads Library</span>
                     <a
-                      href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(product.simplifiedName || product.productName)}&search_type=keyword_unordered`}
+                      href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.simplifiedName || product.productName))}&search_type=keyword_unordered`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-black text-purple-700 text-[0.7rem] bg-white px-3 py-1 rounded-md shadow-sm border border-purple-100 hover:border-purple-300 hover:text-purple-900 transition-all shrink-0 whitespace-nowrap"

@@ -5,6 +5,22 @@ import path from 'path';
 const LOGO_BASE64 = fs.readFileSync(path.join(process.cwd(), 'src/assets/importerr-logo.png')).toString('base64');
 const LOGO_URI = `data:image/png;base64,${LOGO_BASE64}`;
 
+function getCleanAdsQuery(name: string): string {
+  if (!name) return '';
+  let clean = name.replace(/[()[\]{}]/g, ' ').replace(/\s+/g, ' ').trim();
+  const parts = clean.split(/\b(with|for|and|in|of|at|on|all|one|by|—|–|-|\||:)\b/i);
+  const subject = parts[0].trim();
+  const words = subject.split(/\s+/).filter(w => w.length > 1);
+  if (words.length >= 2) {
+    let lastWords = words.slice(-2);
+    if (lastWords[1].toLowerCase().match(/^(1pcs|2pcs|new|2026|pro|max|mini|lite)$/)) {
+      return words.slice(-3, -1).join(' ');
+    }
+    return lastWords.join(' ');
+  }
+  return subject;
+}
+
 export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): string {
   const product = {
     ...rawProduct,
@@ -697,7 +713,7 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
         <div class="section-title" style="margin-top: 5mm;">Meta Ads Density</div>
         <div class="competitor-card" style="border-left: 4px solid #6366f1; display: flex; justify-content: space-between; align-items: center; gap: 4mm;">
           <span class="competitor-name">Active Product Creatives (Meta Ads Library)</span>
-          <a class="competitor-count" style="color: #6366f1; font-size: 13px; white-space: nowrap; flex-shrink: 0; text-decoration: none;" href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(product.simplifiedName || product.productName)}&search_type=keyword_unordered" target="_blank">${product.adsCount} Ads Running ↗</a>
+          <a class="competitor-count" style="color: #6366f1; font-size: 13px; white-space: nowrap; flex-shrink: 0; text-decoration: none;" href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.simplifiedName || product.productName))}&search_type=keyword_unordered" target="_blank">${product.adsCount} Ads Running ↗</a>
         </div>
 
         <div class="section-title" style="margin-top: 5mm;">Amazon Global Traction</div>
