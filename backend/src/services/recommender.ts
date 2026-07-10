@@ -163,6 +163,62 @@ Respond ONLY with the clean simplified product query. Do not include markdown, e
   return clean.split(/\s+/).slice(0, 4).join(' ');
 }
 
+// ─── Gemini: extract a precise visual search query from image analysis ────────
+async function getVisualSearchQueryFromImage(productName: string, images: string[]): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || !images || images.length === 0) {
+    return productName;
+  }
+
+  try {
+    const filename = path.basename(images[0]);
+    const p1 = path.join(process.cwd(), 'uploads', filename);
+    const p2 = path.resolve(__dirname, '..', '..', 'uploads', filename);
+    const uploadPath = fs.existsSync(p1) ? p1 : fs.existsSync(p2) ? p2 : '';
+    if (!uploadPath) return productName;
+
+    const data = fs.readFileSync(uploadPath);
+    const ext = path.extname(filename).toLowerCase();
+    const mimeType = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : ext === '.gif' ? 'image/gif' : 'image/jpeg';
+
+    const prompt = `Look at this product image and the title "${productName}".
+Identify the exact visual item shown, including its core object type, cartoon character/theme if any (e.g., Tom & Jerry, Godzilla, Astronaut), color, style, or specific shape.
+Generate a short 3-6 word Google search query that describes this visual product precisely to find identical matches online.
+Examples:
+- Tom & Jerry sleeping on orange cushion dashboard ornament
+- Cloud tulip night light flower mirror lamp
+- 3D silicone ice cube mold bucket blue
+Respond ONLY with the search query. Do not include markdown, explanations, or quotes.`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType, data: data.toString('base64') } }
+            ]
+          }]
+        })
+      }
+    );
+
+    if (response.ok) {
+      const json = await response.json();
+      const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text && text.trim()) {
+        return text.trim().replace(/^["']|["']$/g, '');
+      }
+    }
+  } catch (err: any) {
+    console.error('[Gemini] Visual query extraction failed:', err.message);
+  }
+  return productName;
+}
+
 // ─── Serper.dev: find real competitor product URLs via Google Image Search ────
 // ─── Serper.dev: find real competitor product URLs via standard Google Search ────
 async function fetchCompetitorUrlsViaSerper(productName: string, originalName?: string): Promise<string[]> {
@@ -349,10 +405,17 @@ export async function analyzeCompetitorsWithAI(productName: string, images?: str
   const simplifiedName = await getSimplifiedProductName(productName, images || []);
   console.log(`[Competitor Analysis] Simplified product name: "${simplifiedName}"`);
 
-  // Run both fetches using the simplified name in parallel
+  // Scan image using Gemini to extract core visual search keywords (fallback to simplifiedName)
+  let visualQuery = simplifiedName;
+  if (images && images.length > 0) {
+    visualQuery = await getVisualSearchQueryFromImage(productName, images);
+    console.log(`[Competitor Analysis] Visual search query extracted: "${visualQuery}"`);
+  }
+
+  // Run both fetches using the visual query for storefront searches and simplified name for marketplace sellers
   const [counts, serperUrls] = await Promise.all([
     countMarketplaceSellersViaSerper(simplifiedName),
-    fetchCompetitorUrlsViaSerper(simplifiedName, productName)
+    fetchCompetitorUrlsViaSerper(visualQuery, productName)
   ]);
 
   const shopifyStores = serperUrls.length > 0
