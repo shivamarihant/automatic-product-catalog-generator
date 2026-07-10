@@ -1,7 +1,25 @@
 import React, { useRef, useState } from 'react';
 import { type ProductInput, type Catalog } from '../utils/api';
 import { OpportunityMeter } from './OpportunityMeter';
-import { Sparkles, Globe, MapPin, Truck, Box } from 'lucide-react';
+import { Sparkles, Globe, MapPin, Truck, Box, TrendingUp, ShoppingBag, Zap, Award, BarChart2, ExternalLink } from 'lucide-react';
+
+const BadgeGreen = ({ children }: { children: React.ReactNode }) => (
+  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">{children}</span>
+);
+const BadgeYellow = ({ children }: { children: React.ReactNode }) => (
+  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">{children}</span>
+);
+const BadgeRed = ({ children }: { children: React.ReactNode }) => (
+  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-100 text-red-800 border border-red-200">{children}</span>
+);
+
+const SectionTitle = ({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) => (
+  <div className="flex items-center gap-2 mb-3">
+    {icon && <span className="text-slate-400">{icon}</span>}
+    <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] whitespace-nowrap">{children}</h3>
+    <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent" />
+  </div>
+);
 
 interface CatalogPreviewProps {
   product: ProductInput;
@@ -53,38 +71,42 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
 
 
-  return (
+  const marginPct = product.calculations?.marginPercentage ?? 0;
+  const score = product.calculations?.opportunityScore ?? 0;
 
+  return (
     <div className="space-y-6">
       
       {/* Screen Interactive Catalog Preview */}
-      <div 
-        ref={printableAreaRef} 
-        id="printable-catalog" 
+      <div
+        ref={printableAreaRef}
+        id="printable-catalog"
         className="flex flex-col gap-8 bg-transparent border-0 p-0 rounded-3xl items-center shadow-none overflow-x-auto print:p-0 print:bg-white print:border-none print:shadow-none"
       >
-        
+
         {/* PAGE 1 */}
-        <div className="w-[200mm] min-h-[297mm] bg-white border border-slate-200/60 p-6 rounded-2xl shadow-xl flex flex-col justify-between shrink-0 print:border-none print:shadow-none print:rounded-none print:m-0 print:w-full">
-          <div>
-            {/* Header */}
-            <div className="flex justify-between items-start mb-4 pb-2 border-b-2 border-slate-800">
-              <div className="flex flex-col gap-1.5">
-                <img src="/assets/importerr-logo.png" alt="importerr.com" className="h-5 object-contain opacity-80" />
-              </div>
-              <div className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Sourcing Report Sheet</div>
+        <div className="w-[200mm] min-h-[297mm] bg-white border border-slate-200/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden shrink-0 print:border-none print:shadow-none print:rounded-none print:m-0 print:w-full">
+
+          {/* Dark header bar */}
+          <div className="bg-slate-900 px-6 py-3 flex justify-between items-center shrink-0">
+            <img src="/assets/importerr-logo.png" alt="importerr.com" className="h-5 object-contain brightness-0 invert opacity-90" />
+            <div className="flex items-center gap-2.5">
+              <span className="text-slate-400 text-[9px] font-bold uppercase tracking-[0.2em]">Sourcing Report Sheet</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
             </div>
+          </div>
+          <div className="flex flex-col flex-1 p-6 gap-5">
 
             {/* Product Title */}
-            <div className="mb-6 w-full">
-              <h1 className="text-[1.5rem] font-black text-slate-900 leading-tight tracking-tight">{product.productName}</h1>
+            <div>
+              <div className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-1.5">{catalog.catalogTitle}</div>
+              <h1 className="text-[1.4rem] font-black text-slate-900 leading-snug tracking-tight">{product.productName}</h1>
             </div>
 
             {/* Image Carousel */}
             {product.images.length > 0 && (
-              <div className="mb-6">
-                {/* Main Image with Arrows */}
-                <div className="relative rounded-xl overflow-hidden border border-slate-100 bg-slate-50 aspect-[14/7] mb-2 group">
+              <div>
+                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-100 aspect-[16/7] mb-2 group shadow-inner">
                   <img
                     src={getSecureUrl(product.images[activeImageIndex])}
                     alt={`Product ${activeImageIndex + 1}`}
@@ -110,41 +132,25 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
-                      {/* Dot indicators */}
-                      <div className="print:hidden absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                      <div className="print:hidden absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5">
                         {product.images.map((_, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setActiveImageIndex(idx)}
-                            className={`w-1.5 h-1.5 rounded-full transition-all ${
-                              idx === activeImageIndex ? 'bg-white w-4' : 'bg-white/60'
-                            }`}
+                          <button key={idx} onClick={() => setActiveImageIndex(idx)}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${idx === activeImageIndex ? 'bg-indigo-500 w-5' : 'bg-white/70 w-1.5 hover:bg-white'}`}
                           />
                         ))}
                       </div>
+                      <div className="print:hidden absolute top-2 right-2 bg-slate-900/60 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
+                        {activeImageIndex + 1} / {product.images.length}
+                      </div>
                     </>
-                  )}
-
-                  {/* Image counter badge */}
-                  {product.images.length > 1 && (
-                    <div className="print:hidden absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {activeImageIndex + 1} / {product.images.length}
-                    </div>
                   )}
                 </div>
 
-                {/* Thumbnails strip */}
                 {product.images.length > 1 && (
                   <div className="print:hidden flex gap-2 overflow-x-auto pb-1">
                     {product.images.map((img, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setActiveImageIndex(idx)}
-                        className={`shrink-0 w-14 h-10 rounded-lg overflow-hidden border-2 transition-all ${
-                          idx === activeImageIndex
-                            ? 'border-slate-800 scale-105 shadow-md'
-                            : 'border-transparent opacity-60 hover:opacity-100 hover:border-slate-300'
-                        }`}
+                      <button key={idx} onClick={() => setActiveImageIndex(idx)}
+                        className={`shrink-0 w-12 h-9 rounded-lg overflow-hidden border-2 transition-all duration-200 ${idx === activeImageIndex ? 'border-indigo-400 scale-105 shadow-md' : 'border-transparent opacity-50 hover:opacity-90 hover:border-slate-300'}`}
                       >
                         <img src={getSecureUrl(img)} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
                       </button>
@@ -163,173 +169,160 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
               </div>
             )}
 
-            {/* Sourcing Overview grid */}
-            <div className="border-b border-slate-100 pb-3 mb-6">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Sourcing Metrics & Margin Analysis</h3>
-            </div>
-            <div className="grid grid-cols-4 gap-4 mb-10">
-              <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-xl flex flex-col items-start justify-center">
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Product Cost</span>
-                <span className="text-2xl font-black text-slate-800">₹{product.cost}</span>
-              </div>
-              <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-xl flex flex-col items-start justify-center">
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Sourcing MOQ</span>
-                <span className="text-2xl font-black text-slate-800">{product.moq}</span>
-                <span className="text-xs text-slate-400 font-medium absolute right-4 bottom-4">Pcs</span>
-              </div>
-              <div className="bg-brand-50 border border-brand-100 p-4 rounded-xl flex flex-col items-start justify-center">
-                <span className="text-[9px] font-bold text-brand-600 uppercase tracking-widest mb-1.5">Est. Selling Price</span>
-                <span className="text-2xl font-black text-brand-700">₹{product.tentativeSellingPrice}</span>
-              </div>
-              <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex flex-col items-start justify-center">
-                <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1.5">Net Unit Profit</span>
-                <span className="text-2xl font-black text-emerald-700">₹{product.calculations?.netProfit}</span>
+            {/* KPI Cards */}
+            <div>
+              <SectionTitle icon={<TrendingUp className="w-3.5 h-3.5" />}>Sourcing Metrics & Margin Analysis</SectionTitle>
+              <div className="grid grid-cols-4 gap-3">
+                <div className="relative overflow-hidden bg-slate-800 text-white p-3.5 rounded-xl flex flex-col gap-1 shadow-lg">
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full -mr-4 -mt-4" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Cost Price</span>
+                  <span className="text-xl font-black leading-none">₹{product.cost}</span>
+                </div>
+                <div className="bg-slate-50 border border-slate-200/80 p-3.5 rounded-xl flex flex-col gap-1">
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Sourcing MOQ</span>
+                  <span className="text-xl font-black text-slate-800 leading-none">{product.moq} <span className="text-xs font-semibold text-slate-400">Pcs</span></span>
+                </div>
+                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-500 to-violet-600 text-white p-3.5 rounded-xl flex flex-col gap-1 shadow-lg">
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-4 -mt-4" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-indigo-200">Est. Selling Price</span>
+                  <span className="text-xl font-black leading-none">₹{product.tentativeSellingPrice}</span>
+                </div>
+                <div className="relative overflow-hidden bg-gradient-to-br from-emerald-400 to-teal-500 text-white p-3.5 rounded-xl flex flex-col gap-1 shadow-lg">
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-4 -mt-4" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-emerald-100">Net Unit Profit</span>
+                  <span className="text-xl font-black leading-none">₹{product.calculations?.netProfit}</span>
+                </div>
               </div>
             </div>
 
-            {/* Main breakdown Table */}
+            {/* Breakdown Table */}
+            <div className="flex-1">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b-2 border-slate-800">
-                  <th className="py-3 px-2 font-bold text-slate-800 uppercase tracking-wider text-[10px]">Metric Name</th>
-                  <th className="py-3 px-2 font-bold text-slate-800 uppercase tracking-wider text-[10px]">Benchmark</th>
-                  <th className="py-3 px-2 font-bold text-slate-800 uppercase tracking-wider text-[10px] text-right">Value</th>
-                  <th className="py-3 px-2 font-bold text-slate-800 uppercase tracking-wider text-[10px] text-right">Evaluation</th>
+                <tr className="bg-slate-900 text-white">
+                  <th className="py-2.5 px-3 font-black uppercase tracking-wider text-[9px] rounded-tl-lg">Metric</th>
+                  <th className="py-2.5 px-3 font-black uppercase tracking-wider text-[9px] text-slate-400">Benchmark</th>
+                  <th className="py-2.5 px-3 font-black uppercase tracking-wider text-[9px] text-right">Value</th>
+                  <th className="py-2.5 px-3 font-black uppercase tracking-wider text-[9px] text-right rounded-tr-lg">Evaluation</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                <tr>
-                  <td className="py-3.5 px-2 font-semibold text-slate-700">Product Cost Price (INR)</td>
-                  <td className="py-3.5 px-2 text-slate-500">Standard landed value</td>
-                  <td className="py-3.5 px-2 font-bold text-slate-900 text-right">₹{product.cost}</td>
-                  <td className="py-3.5 px-2 text-slate-500 text-right">Landed Sourcing cost</td>
+                <tr className="hover:bg-slate-50/60 transition-colors">
+                  <td className="py-3 px-3 font-semibold text-slate-700">Product Cost Price (INR)</td>
+                  <td className="py-3 px-3 text-slate-400">Standard landed value</td>
+                  <td className="py-3 px-3 font-bold text-slate-900 text-right">₹{product.cost}</td>
+                  <td className="py-3 px-3 text-slate-500 text-right text-[10px]">Landed Sourcing cost</td>
                 </tr>
-                <tr>
-                  <td className="py-3.5 px-2 font-semibold text-slate-700">Estimated Selling Price</td>
-                  <td className="py-3.5 px-2 text-slate-500">Target Indian retail price</td>
-                  <td className="py-3.5 px-2 font-bold text-slate-900 text-right">₹{product.tentativeSellingPrice}</td>
-                  <td className="py-3.5 px-2 text-slate-500 text-right">Retail price target</td>
+                <tr className="hover:bg-slate-50/60 transition-colors">
+                  <td className="py-3 px-3 font-semibold text-slate-700">Estimated Selling Price</td>
+                  <td className="py-3 px-3 text-slate-400">Target Indian retail price</td>
+                  <td className="py-3 px-3 font-bold text-slate-900 text-right">₹{product.tentativeSellingPrice}</td>
+                  <td className="py-3 px-3 text-slate-500 text-right text-[10px]">Retail price target</td>
                 </tr>
-                <tr>
-                  <td className="py-3.5 px-2 font-semibold text-slate-700">Gross Margin per Unit</td>
-                  <td className="py-3.5 px-2 text-slate-500">Calculated Profit Delta</td>
-                  <td className="py-3.5 px-2 font-bold text-slate-900 text-right">₹{product.calculations?.margin}</td>
-                  <td className="py-3.5 px-2 font-extrabold text-brand-600 text-right">Margin: {product.calculations?.marginPercentage}%</td>
+                <tr className="hover:bg-slate-50/60 transition-colors">
+                  <td className="py-3 px-3 font-semibold text-slate-700">Gross Margin per Unit</td>
+                  <td className="py-3 px-3 text-slate-400">Calculated Profit Delta</td>
+                  <td className="py-3 px-3 font-bold text-slate-900 text-right">₹{product.calculations?.margin}</td>
+                  <td className="py-3 px-3 text-right"><span className="font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full text-[9px]">{marginPct}% Margin</span></td>
                 </tr>
-                <tr>
-                  <td className="py-3.5 px-2 font-semibold text-slate-700">Logistics Shipping Cost</td>
-                  <td className="py-3.5 px-2 text-slate-500">Landed courier rate</td>
-                  <td className="py-3.5 px-2 font-bold text-slate-900 text-right">₹{product.logistics.shippingCost}</td>
-                  <td className="py-3.5 px-2 text-slate-500 text-right">Courier delivery fee</td>
+                <tr className="hover:bg-slate-50/60 transition-colors">
+                  <td className="py-3 px-3 font-semibold text-slate-700">Logistics Shipping Cost</td>
+                  <td className="py-3 px-3 text-slate-400">Landed courier rate</td>
+                  <td className="py-3 px-3 font-bold text-slate-900 text-right">₹{product.logistics.shippingCost}</td>
+                  <td className="py-3 px-3 text-slate-500 text-right text-[10px]">Courier delivery fee</td>
                 </tr>
-                <tr className="bg-emerald-50/30">
-                  <td className="py-3.5 px-2 font-bold text-emerald-800">Net Sourcing Profit</td>
-                  <td className="py-3.5 px-2 text-emerald-600/80">Final pocket margin</td>
-                  <td className="py-3.5 px-2 font-black text-emerald-600 text-right text-sm">₹{product.calculations?.netProfit}</td>
-                  <td className="py-3.5 px-2 font-semibold text-emerald-700 text-right">Profit after sourcing & logistics</td>
+                <tr className="bg-emerald-50/60">
+                  <td className="py-3 px-3 font-black text-emerald-900">Net Sourcing Profit</td>
+                  <td className="py-3 px-3 text-emerald-600/70 text-[10px]">Final pocket margin</td>
+                  <td className="py-3 px-3 text-right"><span className="font-black text-emerald-700 text-sm">₹{product.calculations?.netProfit}</span></td>
+                  <td className="py-3 px-3 text-emerald-700 text-right text-[10px] font-semibold">After sourcing & logistics</td>
                 </tr>
-                <tr>
-                  <td className="py-3.5 px-2 font-semibold text-slate-700">RTO Return Risk</td>
-                  <td className="py-3.5 px-2 text-slate-500">Industry benchmark &lt; 20%</td>
-                  <td className={`py-3.5 px-2 font-bold text-right ${product.rtoPercentage > 20 ? 'text-red-600' : 'text-slate-900'}`}>{product.rtoPercentage}%</td>
-                  <td className="py-3.5 px-2 text-right">
-                    {product.rtoPercentage > 20 ? (
-                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-100 rounded-md">High Risk</span>
-                    ) : (
-                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-md">Healthy</span>
-                    )}
-                  </td>
+                <tr className="hover:bg-slate-50/60 transition-colors">
+                  <td className="py-3 px-3 font-semibold text-slate-700">RTO Return Risk</td>
+                  <td className="py-3 px-3 text-slate-400">Benchmark &lt; 20%</td>
+                  <td className={`py-3 px-3 font-black text-right ${product.rtoPercentage > 20 ? 'text-red-600' : 'text-slate-900'}`}>{product.rtoPercentage}%</td>
+                  <td className="py-3 px-3 text-right">{product.rtoPercentage > 20 ? <BadgeRed>High Risk</BadgeRed> : <BadgeGreen>Healthy</BadgeGreen>}</td>
                 </tr>
-                <tr>
-                  <td className="py-3.5 px-2 font-semibold text-slate-700">Upsell & Bundle Potential</td>
-                  <td className="py-3.5 px-2 text-slate-500">AOV & LTV Growth potential</td>
-                  <td className="py-3.5 px-2 font-bold text-slate-900 text-right">{product.upsellPotential || 'MEDIUM'}</td>
-                  <td className="py-3.5 px-2 text-right">
-                    {product.upsellPotential === 'YES' ? (
-                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-md">High Potential</span>
-                    ) : product.upsellPotential === 'MEDIUM' ? (
-                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-yellow-50 text-yellow-700 border border-yellow-100 rounded-md">Medium</span>
-                    ) : (
-                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-100 rounded-md">Low</span>
-                    )}
-                  </td>
+                <tr className="hover:bg-slate-50/60 transition-colors">
+                  <td className="py-3 px-3 font-semibold text-slate-700">Upsell & Bundle Potential</td>
+                  <td className="py-3 px-3 text-slate-400">AOV & LTV growth</td>
+                  <td className="py-3 px-3 font-bold text-slate-900 text-right">{product.upsellPotential || 'MEDIUM'}</td>
+                  <td className="py-3 px-3 text-right">{product.upsellPotential === 'YES' ? <BadgeGreen>High Potential</BadgeGreen> : product.upsellPotential === 'MEDIUM' ? <BadgeYellow>Medium</BadgeYellow> : <BadgeRed>Low</BadgeRed>}</td>
                 </tr>
-                <tr>
-                  <td className="py-3.5 px-2 font-semibold text-slate-700">Lower CAC</td>
-                  <td className="py-3.5 px-2 text-slate-500">Customer Acquisition Cost benefit</td>
-                  <td className="py-3.5 px-2 font-bold text-slate-900 text-right">{product.lowerCac || 'MEDIUM'}</td>
-                  <td className="py-3.5 px-2 text-right">
-                    {product.lowerCac === 'YES' ? (
-                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-md">High Advantage</span>
-                    ) : product.lowerCac === 'MEDIUM' ? (
-                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-yellow-50 text-yellow-700 border border-yellow-100 rounded-md">Medium</span>
-                    ) : (
-                      <span className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-100 rounded-md">Low</span>
-                    )}
-                  </td>
+                <tr className="hover:bg-slate-50/60 transition-colors">
+                  <td className="py-3 px-3 font-semibold text-slate-700">Lower CAC</td>
+                  <td className="py-3 px-3 text-slate-400">Customer Acquisition Cost</td>
+                  <td className="py-3 px-3 font-bold text-slate-900 text-right">{product.lowerCac || 'MEDIUM'}</td>
+                  <td className="py-3 px-3 text-right">{product.lowerCac === 'YES' ? <BadgeGreen>High Advantage</BadgeGreen> : product.lowerCac === 'MEDIUM' ? <BadgeYellow>Medium</BadgeYellow> : <BadgeRed>Low</BadgeRed>}</td>
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Footer page 1 */}
-          <div className="flex justify-between items-center border-t border-slate-100 pt-3 text-[10px] text-slate-400">
-            <div>Prepared By: {catalog.preparedBy}</div>
-            <div>Generated On: {formattedDate}</div>
-            <div>Page 1 of 2</div>
+          <div className="border-t border-slate-100 px-6 py-2.5 flex justify-between items-center text-[9px] text-slate-400 bg-slate-50/50 shrink-0">
+            <span>Prepared By: <strong className="text-slate-600">{catalog.preparedBy}</strong></span>
+            <span>Generated On: <strong className="text-slate-600">{formattedDate}</strong></span>
+            <span className="font-bold text-slate-500">Page 1 of 2</span>
           </div>
         </div>
 
         {/* PAGE 2 */}
-        <div className="w-[200mm] min-h-[297mm] bg-white border border-slate-200/60 p-6 rounded-2xl shadow-xl flex flex-col justify-between shrink-0 print:border-none print:shadow-none print:rounded-none print:m-0 print:w-full">
-          <div>
-            {/* Header page 2 */}
-            <div className="flex justify-between items-center mb-8 pb-4 border-b-2 border-slate-800">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{product.productName.substring(0, 40)}...</div>
-              <img src="/assets/importerr-logo.png" alt="importerr.com" className="h-4 object-contain opacity-80" />
-            </div>
+        <div className="w-[200mm] min-h-[297mm] bg-white border border-slate-200/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden shrink-0 print:border-none print:shadow-none print:rounded-none print:m-0 print:w-full">
 
-            {/* Analysis Grid */}
-            <div className="grid grid-cols-2 gap-8 mb-8">
-              
-              {/* Left Column: Marketplace Analysis */}
-              <div className="space-y-6">
+          {/* Dark header bar */}
+          <div className="bg-slate-900 px-6 py-3 flex justify-between items-center shrink-0">
+            <span className="text-slate-300 text-[9px] font-bold uppercase tracking-[0.15em] truncate max-w-[55%]">
+              {product.productName.substring(0, 48)}{product.productName.length > 48 ? '…' : ''}
+            </span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-slate-400 text-[9px] font-bold uppercase tracking-[0.15em]">Competitor & Intelligence Analysis</span>
+              <img src="/assets/importerr-logo.png" alt="importerr.com" className="h-4 object-contain brightness-0 invert opacity-70" />
+            </div>
+          </div>
+
+          <div className="flex flex-col flex-1 p-6 gap-5">
+
+            <div className="grid grid-cols-2 gap-6">
+              {/* Left Column */}
+              <div className="space-y-5">
                 <div>
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">Market Saturation Metrics</h3>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="bg-slate-50 border border-slate-200/60 p-3 rounded-xl flex justify-between items-center">
-                      <span className="text-slate-600 font-semibold tracking-wide">Amazon</span>
-                      <span className="font-black text-slate-900 bg-white px-2 py-0.5 rounded shadow-sm border border-slate-100">{product.marketplaceSellers.amazon}</span>
-                    </div>
-                    <div className="bg-slate-50 border border-slate-200/60 p-3 rounded-xl flex justify-between items-center">
-                      <span className="text-slate-600 font-semibold tracking-wide">Flipkart</span>
-                      <span className="font-black text-slate-900 bg-white px-2 py-0.5 rounded shadow-sm border border-slate-100">{product.marketplaceSellers.flipkart}</span>
-                    </div>
-                    <div className="bg-slate-50 border border-slate-200/60 p-3 rounded-xl flex justify-between items-center">
-                      <span className="text-slate-600 font-semibold tracking-wide">Meesho</span>
-                      <span className="font-black text-slate-900 bg-white px-2 py-0.5 rounded shadow-sm border border-slate-100">{product.marketplaceSellers.meesho}</span>
-                    </div>
-                    <div className="bg-slate-50 border border-slate-200/60 p-3 rounded-xl flex justify-between items-center">
-                      <span className="text-slate-600 font-semibold tracking-wide">JioMart</span>
-                      <span className="font-black text-slate-900 bg-white px-2 py-0.5 rounded shadow-sm border border-slate-100">{product.marketplaceSellers.jiomart}</span>
-                    </div>
+                  <SectionTitle icon={<BarChart2 className="w-3.5 h-3.5" />}>Market Saturation Metrics</SectionTitle>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { name: 'Amazon', emoji: '🛒', val: product.marketplaceSellers.amazon, color: 'from-orange-50 to-amber-50 border-orange-100' },
+                      { name: 'Flipkart', emoji: '⚡', val: product.marketplaceSellers.flipkart, color: 'from-blue-50 to-indigo-50 border-blue-100' },
+                      { name: 'Meesho', emoji: '🛍️', val: product.marketplaceSellers.meesho, color: 'from-pink-50 to-rose-50 border-pink-100' },
+                      { name: 'JioMart', emoji: '🟦', val: product.marketplaceSellers.jiomart, color: 'from-slate-50 to-gray-50 border-slate-200' },
+                    ].map(({ name, emoji, val, color }) => (
+                      <div key={name} className={`bg-gradient-to-br ${color} border p-2.5 rounded-xl flex items-center justify-between gap-2`}>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm leading-none">{emoji}</span>
+                          <span className="text-[10px] font-bold text-slate-600">{name}</span>
+                        </div>
+                        <span className="font-black text-slate-900 text-sm bg-white/80 px-2 py-0.5 rounded-lg shadow-sm border border-white/60">{val}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">Competitor Shopify Store Links</h3>
+                  <SectionTitle icon={<ShoppingBag className="w-3.5 h-3.5" />}>Competitor Shopify Stores</SectionTitle>
                   {product.shopifyStores.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {product.shopifyStores.map((store, idx) => {
                         const isNotFound = store.includes('No live competitor URLs found');
                         return (
-                          <div key={idx} className="bg-blue-50/30 border border-blue-100/50 px-3 py-2 rounded-lg text-xs flex items-center gap-2">
-                            <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                          <div key={idx} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition-all ${isNotFound ? 'bg-slate-50 border-slate-200/60' : 'bg-blue-50/40 border-blue-100/60 hover:bg-blue-50 hover:border-blue-200 group'}`}>
+                            <Globe className={`w-3 h-3 shrink-0 ${isNotFound ? 'text-slate-300' : 'text-blue-400'}`} />
                             {isNotFound ? (
-                              <span className="text-slate-500 font-medium">{store}</span>
+                              <span className="text-slate-400 italic text-[10px]">No live competitor URLs found</span>
                             ) : (
-                              <a href={store.startsWith('http') ? store : `https://${store}`} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-blue-700 hover:text-blue-800 hover:underline transition-all">
+                              <a href={store.startsWith('http') ? store : `https://${store}`} target="_blank" rel="noopener noreferrer"
+                                className="truncate font-semibold text-blue-700 hover:text-blue-900 transition-colors text-[10px] flex items-center gap-1">
                                 {store}
+                                <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                               </a>
                             )}
                           </div>
@@ -337,31 +330,33 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                       })}
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-400 italic">No competitor URLs manually logged.</p>
+                    <p className="text-xs text-slate-400 italic">No competitor URLs found.</p>
                   )}
                 </div>
 
                 <div>
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">Meta Ads Density</h3>
-                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100/60 p-2 rounded-xl flex items-center justify-between text-xs gap-4 shadow-sm">
-                    <span className="text-purple-900 font-bold tracking-wide">Active Creatives in Meta Ads Library</span>
-                    <a
-                      href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.simplifiedName || product.productName))}&search_type=keyword_unordered`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-black text-purple-700 text-[0.7rem] bg-white px-3 py-1 rounded-md shadow-sm border border-purple-100 hover:border-purple-300 hover:text-purple-900 transition-all shrink-0 whitespace-nowrap"
-                    >
-                      {product.adsCount} Ads ↗
-                    </a>
-                  </div>
+                  <SectionTitle icon={<Zap className="w-3.5 h-3.5" />}>Meta Ads Density</SectionTitle>
+                  <a
+                    href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.simplifiedName || product.productName))}&search_type=keyword_unordered`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="group flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-100 hover:border-violet-300 hover:from-violet-100 hover:to-purple-100 transition-all shadow-sm"
+                  >
+                    <div>
+                      <div className="text-[8px] font-black text-violet-400 uppercase tracking-widest mb-0.5">Active Creatives in Meta Ads Library</div>
+                      <div className="text-xl font-black text-violet-900 leading-none">{product.adsCount} <span className="text-xs font-semibold text-violet-400">ads running</span></div>
+                    </div>
+                    <div className="w-9 h-9 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform shrink-0">
+                      <ExternalLink className="w-4 h-4" />
+                    </div>
+                  </a>
                 </div>
 
                 <div>
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">Amazon Best Seller Countries</h3>
+                  <SectionTitle icon={<MapPin className="w-3.5 h-3.5" />}>Amazon Best Seller Countries</SectionTitle>
                   <div className="flex flex-wrap gap-2">
                     {product.fetchedData?.amazonBestSellerCountries.map((country, idx) => (
-                      <span key={idx} className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xxs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
-                        <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                      <span key={idx} className="px-2.5 py-1.5 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 text-slate-700 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm hover:border-slate-300 transition-colors">
+                        <MapPin className="w-2.5 h-2.5 text-indigo-400 shrink-0" />
                         {country}
                       </span>
                     ))}
@@ -369,78 +364,76 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                 </div>
               </div>
 
-              {/* Right Column: Opportunity Score & Search Results */}
-              <div className="space-y-6">
+              {/* Right Column */}
+              <div className="space-y-5">
                 <div>
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">Sourcing Suitability Index</h3>
-                  <OpportunityMeter score={product.calculations?.opportunityScore || 0} />
+                  <SectionTitle icon={<Award className="w-3.5 h-3.5" />}>Sourcing Suitability Index</SectionTitle>
+                  <OpportunityMeter score={score} />
                 </div>
-
                 <div>
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">First Mover Analysis</h3>
-                  <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-xl space-y-3 text-xs">
-                    <div className="flex justify-between items-center border-b border-slate-200/60 pb-3">
-                      <span className="text-slate-600 font-bold">First Mover Advantage:</span>
-                      {product.fetchedData?.firstMoverAdvantage === 'YES' ? (
-                        <span className="px-2.5 py-1 text-[10px] tracking-wider font-black bg-emerald-100 text-emerald-800 rounded-md border border-emerald-200 shadow-sm">HIGH</span>
-                      ) : product.fetchedData?.firstMoverAdvantage === 'MEDIUM' ? (
-                        <span className="px-2.5 py-1 text-[10px] tracking-wider font-black bg-amber-100 text-amber-800 rounded-md border border-amber-200 shadow-sm">MEDIUM</span>
-                      ) : (
-                        <span className="px-2.5 py-1 text-[10px] tracking-wider font-black bg-red-100 text-red-800 rounded-md border border-red-200 shadow-sm">LOW</span>
-                      )}
+                  <SectionTitle>First Mover Analysis</SectionTitle>
+                  <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-200/80 p-4 rounded-xl space-y-3">
+                    <div className="flex justify-between items-center pb-3 border-b border-slate-200/80">
+                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">First Mover Advantage</span>
+                      {product.fetchedData?.firstMoverAdvantage === 'YES' ? <BadgeGreen>HIGH</BadgeGreen>
+                        : product.fetchedData?.firstMoverAdvantage === 'MEDIUM' ? <BadgeYellow>MEDIUM</BadgeYellow>
+                        : <BadgeRed>LOW</BadgeRed>}
                     </div>
-                    <div className="flex justify-between items-center pt-1">
-                      <span className="text-slate-600 font-bold">Marketplace Sellers Found:</span>
-                      <span className="font-black text-slate-900 bg-white px-2 py-0.5 rounded shadow-sm border border-slate-100">{product.fetchedData?.approxSellers} sellers</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">Marketplace Sellers Found</span>
+                      <span className="font-black text-slate-900 bg-white px-2.5 py-1 rounded-lg shadow-sm border border-slate-200 text-xs">{product.fetchedData?.approxSellers} sellers</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Logistics Table */}
-            <div className="mb-8">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">Logistics & Packaging Specifications</h3>
-              <div className="grid grid-cols-3 gap-0 border border-slate-200/80 rounded-xl overflow-hidden divide-x divide-slate-200/80 shadow-sm">
-                <div className="p-4 bg-slate-50 flex flex-col justify-center">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Truck className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Unit Weight</span>
+            {/* Logistics */}
+            <div>
+              <SectionTitle icon={<Truck className="w-3.5 h-3.5" />}>Logistics & Packaging Specifications</SectionTitle>
+              <div className="grid grid-cols-3 gap-0 border border-slate-200/80 rounded-2xl overflow-hidden divide-x divide-slate-200/80 shadow-sm">
+                <div className="p-4 bg-slate-50 flex flex-col gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Truck className="w-3 h-3 text-slate-400" />
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Unit Weight</span>
                   </div>
-                  <span className="font-black text-slate-800 text-lg">{product.logistics.weight}</span>
+                  <span className="font-black text-slate-800 text-lg leading-none">{product.logistics.weight}</span>
                 </div>
-                <div className="p-4 bg-slate-50 flex flex-col justify-center">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Box className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Package Dimensions</span>
+                <div className="p-4 bg-slate-50 flex flex-col gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Box className="w-3 h-3 text-slate-400" />
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Package Dimensions</span>
                   </div>
-                  <span className="font-black text-slate-800 text-lg">{product.logistics.dimensions.length}x{product.logistics.dimensions.width}x{product.logistics.dimensions.height} <span className="text-sm text-slate-400">cm</span></span>
+                  <span className="font-black text-slate-800 text-base leading-none">{product.logistics.dimensions.length}×{product.logistics.dimensions.width}×{product.logistics.dimensions.height}<span className="text-xs font-semibold text-slate-400 ml-1">cm</span></span>
                 </div>
-                <div className="p-4 bg-brand-50/50 flex flex-col justify-center">
-                  <span className="text-[9px] font-bold text-brand-600 uppercase tracking-widest mb-1.5">Required Landed Shipping Fee</span>
-                  <span className="font-black text-brand-700 text-lg">₹{product.logistics.shippingCost} <span className="text-sm font-bold text-brand-500/80">Courier / Unit</span></span>
+                <div className="p-4 bg-gradient-to-br from-indigo-50 to-violet-50 flex flex-col gap-1.5">
+                  <span className="text-[8px] font-black text-indigo-500 uppercase tracking-widest">Landed Shipping Fee</span>
+                  <span className="font-black text-indigo-700 text-lg leading-none">₹{product.logistics.shippingCost}<span className="text-xs font-semibold text-indigo-400 ml-1">/ unit</span></span>
                 </div>
               </div>
             </div>
 
-            {/* Recommendation Box */}
-            <div className="bg-slate-900 text-white p-6 rounded-2xl relative overflow-hidden shadow-lg border border-slate-800">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+            {/* AI Recommendation */}
+            <div className="relative overflow-hidden bg-slate-900 text-white p-5 rounded-2xl shadow-xl border border-slate-800 flex-1">
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/15 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-violet-500/10 rounded-full blur-2xl pointer-events-none" />
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-5 h-5 text-yellow-400" />
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-300">AI Market Intelligence Advisory</h3>
+                  <div className="w-6 h-6 rounded-full bg-yellow-400/20 border border-yellow-400/30 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">AI Market Intelligence Advisory</span>
                 </div>
-                <p className="text-sm font-medium leading-relaxed opacity-95 text-slate-100">{product.aiRecommendation}</p>
+                <p className="text-[11px] font-medium leading-relaxed text-slate-200">{product.aiRecommendation}</p>
               </div>
             </div>
           </div>
 
           {/* Footer page 2 */}
-          <div className="flex justify-between items-center border-t border-slate-100 pt-3 text-[10px] text-slate-400">
-            <div>Report ID: {catalog._id}</div>
-            <div>Product ID: {product._id}</div>
-            <div>Page 2 of 2</div>
+          <div className="border-t border-slate-100 px-6 py-2.5 flex justify-between items-center text-[9px] text-slate-400 bg-slate-50/50 shrink-0">
+            <span>Report ID: <strong className="text-slate-500">{catalog._id}</strong></span>
+            <span>Product ID: <strong className="text-slate-500">{product._id}</strong></span>
+            <span className="font-bold text-slate-500">Page 2 of 2</span>
           </div>
         </div>
 
