@@ -346,7 +346,11 @@ async function countMarketplaceSellersViaSerper(productName: string): Promise<{
       const organicList = data.organic || [];
       const matchingOrganic = organicList.filter((item: any) => {
         const link = item.link || '';
-        return link.toLowerCase().includes(domainPattern.toLowerCase());
+        const lower = link.toLowerCase();
+        if (domainPattern.includes('facebook.com/ads/library')) {
+          return lower.includes('facebook.com/ads/library') && (lower.includes('q=') || lower.includes('id=') || lower.includes('page_id='));
+        }
+        return lower.includes(domainPattern.toLowerCase());
       });
 
       const rawTotal = data.searchInformation?.totalResults || '0';
@@ -369,7 +373,7 @@ async function countMarketplaceSellersViaSerper(productName: string): Promise<{
     serperSearch(`flipkart.com ${productName}`, `flipkart.com`),
     serperSearch(`meesho.com ${productName}`, `meesho.com`),
     serperSearch(`jiomart.com ${productName}`, `jiomart.com`),
-    serperSearch(`${productName} facebook ads`, `facebook.com`)
+    serperSearch(`facebook.com/ads/library ${productName}`, `facebook.com/ads/library`)
   ]);
 
   const normalize = (data: { organic: number; total: number }, divisor: number, cap: number): number => {
@@ -382,7 +386,7 @@ async function countMarketplaceSellersViaSerper(productName: string): Promise<{
     flipkart: normalize(flipkartData, 3, 9999),
     meesho:   normalize(meeshoData,   2, 9999),
     jiomart:  normalize(jiomartData,  2, 9999),
-    adsCount: normalize(adsData,      4, 9999)
+    adsCount: normalize(adsData,      1, 9999) * 4
   };
 
   console.log(`[Serper] Real counts — Amazon: ${result.amazon}, Flipkart: ${result.flipkart}, Meesho: ${result.meesho}, JioMart: ${result.jiomart}, Ads: ${result.adsCount}`);
