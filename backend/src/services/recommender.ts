@@ -293,9 +293,10 @@ async function fetchCompetitorUrlsViaSerper(productName: string, originalName?: 
       const candidates: string[] = [];
       for (const r of results) {
         const url: string = r.link || '';
-        const isBlocked = MARKETPLACE_BLACKLIST.some(m => url.toLowerCase().includes(m));
-        if (!isBlocked && url.startsWith('http') && !found.includes(url) && !candidates.includes(url)) {
-          candidates.push(url);
+        const cleanUrl = url.split('?')[0];
+        const isBlocked = MARKETPLACE_BLACKLIST.some(m => cleanUrl.toLowerCase().includes(m));
+        if (!isBlocked && cleanUrl.startsWith('http') && !found.includes(cleanUrl) && !candidates.includes(cleanUrl)) {
+          candidates.push(cleanUrl);
         }
       }
 
@@ -307,9 +308,10 @@ async function fetchCompetitorUrlsViaSerper(productName: string, originalName?: 
 
       // Add verified ones to found list
       for (const item of checkResults) {
-        if (item.isShopify && found.length < 3 && !found.includes(item.url)) {
-          console.log(`[Serper ${endpoint}] ✓ Verified Shopify competitor URL: ${item.url}`);
-          found.push(item.url);
+        const cleanUrl = item.url.split('?')[0];
+        if (item.isShopify && found.length < 3 && !found.includes(cleanUrl)) {
+          console.log(`[Serper ${endpoint}] ✓ Verified Shopify competitor URL: ${cleanUrl}`);
+          found.push(cleanUrl);
         }
       }
     } catch (err: any) {
