@@ -246,10 +246,17 @@ async function fetchCompetitorUrlsViaSerper(productName: string, originalName?: 
 
   // Helper to check if a domain is a Shopify store
   const checkShopify = async (url: string): Promise<boolean> => {
+    const lowerUrl = url.toLowerCase();
+    
+    // If it explicitly has myshopify.com in the link, it is 100% a Shopify store!
+    if (lowerUrl.includes('myshopify.com')) {
+      return true;
+    }
+
     try {
       const origin = new URL(url).origin;
       const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 4500); // 4.5s timeout
+      const id = setTimeout(() => controller.abort(), 4000); // 4s timeout
       const res = await fetch(origin, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -257,16 +264,31 @@ async function fetchCompetitorUrlsViaSerper(productName: string, originalName?: 
         signal: controller.signal
       });
       clearTimeout(id);
-      if (!res.ok) return false;
-      const html = await res.text();
-      const lower = html.toLowerCase();
-      return lower.includes('cdn.shopify.com') ||
-             lower.includes('shopify.theme') ||
-             lower.includes('myshopify.com') ||
-             lower.includes('shopify-payment');
-    } catch {
-      return false;
+      if (res.ok) {
+        const html = await res.text();
+        const lower = html.toLowerCase();
+        if (
+          lower.includes('cdn.shopify.com') ||
+          lower.includes('shopify.theme') ||
+          lower.includes('myshopify.com') ||
+          lower.includes('shopify-payment')
+        ) {
+          return true;
+        }
+      }
+    } catch (err: any) {
+      console.warn(`[Shopify Verification] Fetch error for ${url}:`, err.message);
     }
+
+    // Fallback: If verification failed or was blocked by Cloudflare (non-200 or fetch error),
+    // but the URL contains standard shopify product path /products/ and passed our blacklist,
+    // we accept it as a high-confidence fallback.
+    if (lowerUrl.includes('/products/') && !lowerUrl.includes('desertcart.') && !lowerUrl.includes('ubuy.')) {
+      console.log(`[Shopify Verification] Fallback accepted for blocked URL: ${url}`);
+      return true;
+    }
+
+    return false;
   };
 
   // Helper to fetch from a specific Serper endpoint
