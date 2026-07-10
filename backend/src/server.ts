@@ -4,6 +4,7 @@ import cors from 'cors';
 import express from 'express';
 import multer from 'multer';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 
 import { 
   connectDB, 
@@ -12,8 +13,7 @@ import {
   getAllProducts, 
   saveCatalog, 
   getCatalog,
-  getCatalogsByProduct,
-  clearAllCatalogs
+  getCatalogsByProduct
 } from './db';
 import { fetchMarketIntelligence } from './services/scraper';
 import { performCalculations } from './services/calculations';
@@ -334,21 +334,50 @@ app.post('/api/products/ai-research', async (req, res) => {
   }
 });
 
-// 9. Clear Production Catalogs: POST /api/catalog/clear-production-only
+// 9. Clear Production Data: POST /api/catalog/clear-production-only
 app.post('/api/catalog/clear-production-only', async (req, res) => {
   try {
-    const mongoURI = process.env.MONGODB_URI || '';
-    const isProduction = mongoURI && !mongoURI.includes('localhost') && !mongoURI.includes('127.0.0.1');
-
-    if (!isProduction) {
-      return res.status(400).json({ error: 'This operation is restricted to the production environment.' });
+    console.log('[Production Clean] Clearing MongoDB collections...');
+    if (mongoose.connection.readyState === 1) {
+      if (mongoose.models.Product) {
+        await mongoose.models.Product.deleteMany({});
+      }
+      if (mongoose.models.Catalog) {
+        await mongoose.models.Catalog.deleteMany({});
+      }
+      console.log('[Production Clean] MongoDB collections successfully cleared.');
     }
 
-    const deletedCount = await clearAllCatalogs();
-    console.log(`[Admin] Cleared all ${deletedCount} catalogs from production database.`);
-    return res.status(200).json({ message: `Successfully cleared all ${deletedCount} catalogs from production database.` });
+    console.log('[Production Clean] Clearing local JSON data...');
+    const DATA_DIR = path.join(__dirname, '..', 'data');
+    const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
+    const CATALOGS_FILE = path.join(DATA_DIR, 'catalogs.json');
+    if (fs.existsSync(PRODUCTS_FILE)) {
+      fs.writeFileSync(PRODUCTS_FILE, JSON.stringify([], null, 2));
+    }
+    if (fs.existsSync(CATALOGS_FILE)) {
+      fs.writeFileSync(CATALOGS_FILE, JSON.stringify([], null, 2));
+    }
+
+    console.log('[Production Clean] Cleaning uploads folder...');
+    const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+    if (fs.existsSync(UPLOADS_DIR)) {
+      const files = fs.readdirSync(UPLOADS_DIR);
+      for (const file of files) {
+        const curPath = path.join(UPLOADS_DIR, file);
+        if (fs.lstatSync(curPath).isDirectory()) {
+          fs.rmSync(curPath, { recursive: true, force: true });
+        } else {
+          fs.unlinkSync(curPath);
+        }
+      }
+      fs.mkdirSync(path.join(UPLOADS_DIR, 'catalogs'), { recursive: true });
+    }
+
+    return res.status(200).json({ message: 'Production products, catalogs, and uploads cleared successfully.' });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    console.error('Production Cleanup Error:', error);
+    return res.status(500).json({ error: error.message || 'Production cleanup failed.' });
   }
 });
 
