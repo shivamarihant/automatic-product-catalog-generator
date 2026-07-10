@@ -125,50 +125,41 @@ export async function fetchMarketIntelligence(productName: string, simplifiedNam
     const searchTerms = simplifiedName || productName;
     const countriesFound = new Set<string>();
 
-    // 1. Try Serper (Google) search first for accurate index data if API key is available
+    // 1. Try Serper (Google) search for each Amazon country domain individually
     const serperKey = process.env.SERPER_API_KEY;
     if (serperKey) {
-      try {
-        const query = `"${searchTerms}" (site:amazon.com OR site:amazon.in OR site:amazon.co.uk OR site:amazon.ca OR site:amazon.de OR site:amazon.com.au OR site:amazon.ae)`;
-        const res = await fetch('https://google.serper.dev/search', {
-          method: 'POST',
-          headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ q: query, gl: 'in', hl: 'en', num: 10 })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const organic = data.organic || [];
-          organic.forEach((item: any) => {
-            const link = item.link || '';
-            if (link.includes('amazon.in')) countriesFound.add('India');
-            if (link.includes('amazon.com') && !link.includes('amazon.com.')) countriesFound.add('USA');
-            if (link.includes('amazon.co.uk')) countriesFound.add('UK');
-            if (link.includes('amazon.ca')) countriesFound.add('Canada');
-            if (link.includes('amazon.de')) countriesFound.add('Germany');
-            if (link.includes('amazon.fr')) countriesFound.add('France');
-            if (link.includes('amazon.co.jp')) countriesFound.add('Japan');
-            if (link.includes('amazon.com.au')) countriesFound.add('Australia');
-            if (link.includes('amazon.ae')) countriesFound.add('UAE');
-          });
-        }
-      } catch (err) {
-        console.error('Error fetching Amazon countries from Serper:', err);
-      }
-    }
+      const countryDomains: { domain: string; country: string }[] = [
+        { domain: 'amazon.in', country: 'India' },
+        { domain: 'amazon.com', country: 'USA' },
+        { domain: 'amazon.co.uk', country: 'UK' },
+        { domain: 'amazon.ca', country: 'Canada' },
+        { domain: 'amazon.de', country: 'Germany' },
+        { domain: 'amazon.com.au', country: 'Australia' },
+        { domain: 'amazon.ae', country: 'UAE' },
+      ];
 
-    // 2. Fallback to DuckDuckGo if Serper returned nothing or was disabled
-    if (countriesFound.size === 0) {
-      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchTerms)}+site:amazon.com+OR+site:amazon.in+OR+site:amazon.co.uk+OR+site:amazon.de+OR+site:amazon.ca`;
-      const html = await fetchWithTimeout(searchUrl, {}, 6000);
-      if (html.includes('amazon.in')) countriesFound.add('India');
-      if (html.includes('amazon.com')) countriesFound.add('USA');
-      if (html.includes('amazon.co.uk')) countriesFound.add('UK');
-      if (html.includes('amazon.ca')) countriesFound.add('Canada');
-      if (html.includes('amazon.de')) countriesFound.add('Germany');
-      if (html.includes('amazon.fr')) countriesFound.add('France');
-      if (html.includes('amazon.co.jp')) countriesFound.add('Japan');
-      if (html.includes('amazon.com.au')) countriesFound.add('Australia');
-      if (html.includes('amazon.ae')) countriesFound.add('UAE');
+      // Search each domain in parallel (no quoted operators — free-tier compatible)
+      const domainResults = await Promise.all(
+        countryDomains.map(async ({ domain, country }) => {
+          try {
+            const res = await fetch('https://google.serper.dev/search', {
+              method: 'POST',
+              headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ q: `${domain} ${searchTerms}`, gl: 'in', hl: 'en', num: 5 })
+            });
+            if (!res.ok) return null;
+            const data = await res.json();
+            const organic = data.organic || [];
+            const hasMatch = organic.some((item: any) => (item.link || '').toLowerCase().includes(domain));
+            return hasMatch ? country : null;
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      domainResults.forEach(country => { if (country) countriesFound.add(country); });
+      console.log(`[Serper] Amazon Best Seller Countries found: ${Array.from(countriesFound).join(', ')}`);
     }
 
     // If no amazon indexed pages found, check fallback search to estimate competition
