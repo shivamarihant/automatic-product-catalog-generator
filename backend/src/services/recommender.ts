@@ -244,6 +244,31 @@ async function fetchCompetitorUrlsViaSerper(productName: string, originalName?: 
 
   const found: string[] = [];
 
+  // Helper to check if a domain is a Shopify store
+  const checkShopify = async (url: string): Promise<boolean> => {
+    try {
+      const origin = new URL(url).origin;
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), 4500); // 4.5s timeout
+      const res = await fetch(origin, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
+        signal: controller.signal
+      });
+      clearTimeout(id);
+      if (!res.ok) return false;
+      const html = await res.text();
+      const lower = html.toLowerCase();
+      return lower.includes('cdn.shopify.com') ||
+             lower.includes('shopify.theme') ||
+             lower.includes('myshopify.com') ||
+             lower.includes('shopify-payment');
+    } catch {
+      return false;
+    }
+  };
+
   // Helper to fetch from a specific Serper endpoint
   const runQuery = async (query: string, endpoint: 'search' | 'images') => {
     try {
@@ -265,12 +290,26 @@ async function fetchCompetitorUrlsViaSerper(productName: string, originalName?: 
       const data = await res.json();
       const results = endpoint === 'search' ? (data.organic || []) : (data.images || []);
 
+      const candidates: string[] = [];
       for (const r of results) {
         const url: string = r.link || '';
         const isBlocked = MARKETPLACE_BLACKLIST.some(m => url.toLowerCase().includes(m));
-        if (!isBlocked && url.startsWith('http') && !found.includes(url) && found.length < 3) {
-          console.log(`[Serper ${endpoint}] ✓ Found competitor URL: ${url}`);
-          found.push(url);
+        if (!isBlocked && url.startsWith('http') && !found.includes(url) && !candidates.includes(url)) {
+          candidates.push(url);
+        }
+      }
+
+      // Verify candidates in parallel
+      const checkResults = await Promise.all(candidates.map(async (url) => {
+        const isShopify = await checkShopify(url);
+        return { url, isShopify };
+      }));
+
+      // Add verified ones to found list
+      for (const item of checkResults) {
+        if (item.isShopify && found.length < 3 && !found.includes(item.url)) {
+          console.log(`[Serper ${endpoint}] ✓ Verified Shopify competitor URL: ${item.url}`);
+          found.push(item.url);
         }
       }
     } catch (err: any) {
