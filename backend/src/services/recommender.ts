@@ -382,8 +382,29 @@ async function fetchCompetitorUrlsViaSerper(productName: string, originalName?: 
   return found;
 }
 
+function getCoreNoun(name: string): string {
+  // Remove special characters, brackets, parenthesis
+  let clean = name.replace(/[()[\]{}]/g, ' ').replace(/\s+/g, ' ').trim();
+  // Split by prepositions or common separators
+  const parts = clean.split(/\b(with|for|and|in|of|at|on|all|one|by|—|-|\||:)\b/i);
+  const subject = parts[0].trim();
+  const words = subject.split(/\s+/).filter(w => w.length > 1);
+  if (words.length >= 2) {
+    let lastWords = words.slice(-2);
+    if (lastWords[1].toLowerCase().match(/^(1pcs|2pcs|new|2026|pro|max|mini|lite)$/)) {
+      return words.slice(-3, -1).join(' ');
+    }
+    return lastWords.join(' '); // Take the last 2 words
+  }
+  return subject;
+}
+
 // ─── Serper.dev: count real sellers per marketplace via Google site: search ──
-async function countMarketplaceSellersViaSerper(productName: string, adsQueryName?: string): Promise<{
+async function countMarketplaceSellersViaSerper(
+  productName: string, 
+  adsQueryName?: string,
+  competitorBrands?: string[]
+): Promise<{
   amazon: number;
   flipkart: number;
   meesho: number;
@@ -435,13 +456,14 @@ async function countMarketplaceSellersViaSerper(productName: string, adsQueryNam
 
   console.log(`[Serper] Counting real marketplace sellers for: "${productName}" (Ads query: "${adsQueryName || productName}")`);
   const adsQuery = adsQueryName || productName;
+  const coreNoun = getCoreNoun(adsQuery);
 
-  const [amazonData, flipkartData, meeshoData, jiomartData, adsData] = await Promise.all([
+  // Run standard marketplace searches in parallel
+  const [amazonData, flipkartData, meeshoData, jiomartData] = await Promise.all([
     serperSearch(`amazon.in ${productName}`, `amazon.`),
     serperSearch(`flipkart.com ${productName}`, `flipkart.com`),
     serperSearch(`meesho.com ${productName}`, `meesho.com`),
-    serperSearch(`jiomart.com ${productName}`, `jiomart.com`),
-    serperSearch(`facebook.com/ads/library ${adsQuery}`, `facebook.com/ads/library`)
+    serperSearch(`jiomart.com ${productName}`, `jiomart.com`)
   ]);
 
   const normalize = (data: { organic: number; total: number }, divisor: number, cap: number): number => {
@@ -449,12 +471,36 @@ async function countMarketplaceSellersViaSerper(productName: string, adsQueryNam
     return Math.max(0, data.organic);
   };
 
+  // Perform multi-layered Ads search queries
+  const specificAdsData = await serperSearch(`facebook.com/ads/library ${adsQuery}`, `facebook.com/ads/library`);
+  const normalizedSpecific = normalize(specificAdsData, 1, 9999);
+
+  let normalizedBroad = 0;
+  if (normalizedSpecific < 2 && coreNoun && coreNoun.toLowerCase() !== adsQuery.toLowerCase()) {
+    console.log(`[Serper] Low ads count for specific query (${normalizedSpecific}). Fetching broad core noun: "${coreNoun}"`);
+    const broadAdsData = await serperSearch(`facebook.com/ads/library ${coreNoun}`, `facebook.com/ads/library`);
+    normalizedBroad = normalize(broadAdsData, 1, 9999);
+  }
+
+  let brandAdsCount = 0;
+  if (competitorBrands && competitorBrands.length > 0) {
+    const brandPromises = competitorBrands.map(async (brand) => {
+      const data = await serperSearch(`facebook.com/ads/library ${brand}`, `facebook.com/ads/library`);
+      return normalize(data, 1, 9999);
+    });
+    const brandResults = await Promise.all(brandPromises);
+    brandAdsCount = brandResults.reduce((sum, val) => sum + val, 0);
+  }
+
+  const totalCampaigns = Math.max(normalizedSpecific + brandAdsCount, normalizedBroad);
+  const adsCount = Math.max(1, totalCampaigns) * 4;
+
   const result = {
     amazon:   normalize(amazonData,   3, 9999),
     flipkart: normalize(flipkartData, 3, 9999),
     meesho:   normalize(meeshoData,   2, 9999),
     jiomart:  normalize(jiomartData,  2, 9999),
-    adsCount: normalize(adsData,      1, 9999) * 4
+    adsCount
   };
 
   console.log(`[Serper] Real counts — Amazon: ${result.amazon}, Flipkart: ${result.flipkart}, Meesho: ${result.meesho}, JioMart: ${result.jiomart}, Ads: ${result.adsCount}`);
@@ -484,11 +530,22 @@ export async function analyzeCompetitorsWithAI(productName: string, images?: str
     console.log(`[Competitor Analysis] Visual search query extracted: "${visualQuery}"`);
   }
 
-  // Run both fetches using the visual query for storefront searches and simplified name for marketplace sellers
-  const [counts, serperUrls] = await Promise.all([
-    countMarketplaceSellersViaSerper(simplifiedName, visualQuery),
-    fetchCompetitorUrlsViaSerper(visualQuery, productName)
-  ]);
+  // 1. Fetch Shopify stores first
+  const serperUrls = await fetchCompetitorUrlsViaSerper(visualQuery, productName);
+
+  // 2. Extract competitor brand names
+  const competitorBrands = serperUrls.map(url => {
+    try {
+      const hostname = new URL(url).hostname;
+      const parts = hostname.replace('www.', '').split('.');
+      return parts.length > 0 ? parts[0] : '';
+    } catch {
+      return '';
+    }
+  }).filter(Boolean);
+
+  // 3. Count marketplace sellers and ads count (passing competitor brands for ad density matching)
+  const counts = await countMarketplaceSellersViaSerper(simplifiedName, visualQuery, competitorBrands);
 
   const shopifyStores = serperUrls.length > 0
     ? serperUrls
