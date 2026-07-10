@@ -316,7 +316,7 @@ async function fetchCompetitorUrlsViaSerper(productName: string, originalName?: 
 }
 
 // ─── Serper.dev: count real sellers per marketplace via Google site: search ──
-async function countMarketplaceSellersViaSerper(productName: string): Promise<{
+async function countMarketplaceSellersViaSerper(productName: string, adsQueryName?: string): Promise<{
   amazon: number;
   flipkart: number;
   meesho: number;
@@ -366,14 +366,15 @@ async function countMarketplaceSellersViaSerper(productName: string): Promise<{
     }
   };
 
-  console.log(`[Serper] Counting real marketplace sellers for: "${productName}"`);
+  console.log(`[Serper] Counting real marketplace sellers for: "${productName}" (Ads query: "${adsQueryName || productName}")`);
+  const adsQuery = adsQueryName || productName;
 
   const [amazonData, flipkartData, meeshoData, jiomartData, adsData] = await Promise.all([
     serperSearch(`amazon.in ${productName}`, `amazon.`),
     serperSearch(`flipkart.com ${productName}`, `flipkart.com`),
     serperSearch(`meesho.com ${productName}`, `meesho.com`),
     serperSearch(`jiomart.com ${productName}`, `jiomart.com`),
-    serperSearch(`facebook.com/ads/library ${productName}`, `facebook.com/ads/library`)
+    serperSearch(`facebook.com/ads/library ${adsQuery}`, `facebook.com/ads/library`)
   ]);
 
   const normalize = (data: { organic: number; total: number }, divisor: number, cap: number): number => {
@@ -418,7 +419,7 @@ export async function analyzeCompetitorsWithAI(productName: string, images?: str
 
   // Run both fetches using the visual query for storefront searches and simplified name for marketplace sellers
   const [counts, serperUrls] = await Promise.all([
-    countMarketplaceSellersViaSerper(simplifiedName),
+    countMarketplaceSellersViaSerper(simplifiedName, visualQuery),
     fetchCompetitorUrlsViaSerper(visualQuery, productName)
   ]);
 
@@ -429,6 +430,6 @@ export async function analyzeCompetitorsWithAI(productName: string, images?: str
   return {
     ...counts,
     shopifyStores,
-    simplifiedName
+    simplifiedName: visualQuery
   };
 }
