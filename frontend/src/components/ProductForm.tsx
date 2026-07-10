@@ -158,7 +158,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
       'myntra', 'ajio', 'nykaa', 'ebay', 'aliexpress', 'etsy',
       'walmart', 'target', 'indiamart', 'justdial', 'alibaba',
       'tradeindia', 'youtube', 'instagram', 'facebook', 'twitter', 'pinterest',
-      'linkedin', 'reddit', 'quora', 'glassdoor', 'ambitionbox'
+      'linkedin', 'reddit', 'quora', 'glassdoor', 'ambitionbox',
+      'desertcart', 'ubuy', 'u-buy', 'fruugo', 'grandado', 'forbes', 'nytimes',
+      'healthline', 'webmd', 'medicalnewstoday', 'cosmopolitan', 'rehabmart', 'tiktok'
     ];
     const nonWebsites = shopifyStores.filter(store => store.trim() !== '');
     const hasMarketplace = nonWebsites.some(store => {

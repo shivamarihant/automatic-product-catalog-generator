@@ -235,7 +235,11 @@ async function fetchCompetitorUrlsViaSerper(productName: string, originalName?: 
     'linkedin.', 'reddit.', 'quora.', 'ebay.', 'aliexpress.', 'etsy.',
     'walmart.', 'target.', 'indiamart.', 'justdial.', 'alibaba.',
     'tradeindia.', 'glassdoor.', 'ambitionbox.', 'dhgate.', 'banggood.',
-    'temu.', 'shein.', 'indiamart.'
+    'temu.', 'shein.', 'indiamart.', 'desertcart.', 'ubuy.', 'u-buy.',
+    'fruugo.', 'grandado.', 'forbes.', 'nytimes.', 'healthline.', 'webmd.',
+    'medicalnewstoday.', 'cosmopolitan.', 'rehabmart.', 'tiktok.',
+    'goodhousekeeping.', 'businessinsider.', 'cnn.', 'bbc.', 'theguardian.',
+    'wsj.', 'bloomberg.', 'reuters.', 'gq.', 'vogue.', 'allure.'
   ];
 
   const found: string[] = [];
