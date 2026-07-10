@@ -201,23 +201,56 @@ export async function fetchMarketIntelligence(productName: string, simplifiedNam
 
     // Fetch Meta Ads indexed library references
     let metaAdsCount = 0;
-    try {
-      const fbSearchUrl = `https://html.duckduckgo.com/html/?q=site:facebook.com/ads/library+%22${encodeURIComponent(productName)}%22`;
-      const fbHtml = await fetchWithTimeout(fbSearchUrl, {}, 5000);
-      const fbResultsCount = (fbHtml.match(/class="result__snippet"/g) || []).length;
-      if (fbResultsCount > 0) {
-        metaAdsCount = Math.max(2, fbResultsCount * 6 + Math.floor(Math.random() * 5));
-      } else {
-        // Fallback: estimate based on competition
-        metaAdsCount = firstMoverAdvantage === 'YES' 
-          ? Math.floor(Math.random() * 4) 
-          : firstMoverAdvantage === 'MEDIUM' 
-          ? 8 + Math.floor(Math.random() * 15) 
-          : 25 + Math.floor(Math.random() * 25);
+    let serperSuccess = false;
+
+    if (serperKey) {
+      try {
+        const query = `facebook.com/ads/library ${searchTerms}`;
+        const res = await fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ q: query, gl: 'in', hl: 'en', num: 15 })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const organic = data.organic || [];
+          const matchingOrganic = organic.filter((item: any) => {
+            const link = item.link || '';
+            return link.toLowerCase().includes('facebook.com/ads/library');
+          });
+          if (matchingOrganic.length > 0) {
+            metaAdsCount = Math.max(2, matchingOrganic.length * 4);
+          } else {
+            const fbMatching = organic.filter((item: any) => (item.link || '').toLowerCase().includes('facebook.com'));
+            metaAdsCount = fbMatching.length > 0 ? fbMatching.length * 2 : 0;
+          }
+          serperSuccess = true;
+          console.log(`[Serper Meta Ads] Successfully fetched ad count from Serper: ${metaAdsCount}`);
+        }
+      } catch (err) {
+        console.error('Error fetching Meta Ads count from Serper:', err);
       }
-    } catch (err) {
-      console.warn('Meta Ads search scrape failed. Using fallback estimate.');
-      metaAdsCount = firstMoverAdvantage === 'YES' ? 3 : (firstMoverAdvantage === 'MEDIUM' ? 15 : 42);
+    }
+
+    if (!serperSuccess) {
+      try {
+        const fbSearchUrl = `https://html.duckduckgo.com/html/?q=site:facebook.com/ads/library+%22${encodeURIComponent(productName)}%22`;
+        const fbHtml = await fetchWithTimeout(fbSearchUrl, {}, 5000);
+        const fbResultsCount = (fbHtml.match(/class="result__snippet"/g) || []).length;
+        if (fbResultsCount > 0) {
+          metaAdsCount = Math.max(2, fbResultsCount * 6 + Math.floor(Math.random() * 5));
+        } else {
+          // Fallback: estimate based on competition
+          metaAdsCount = firstMoverAdvantage === 'YES' 
+            ? Math.floor(Math.random() * 4) 
+            : firstMoverAdvantage === 'MEDIUM' 
+            ? 8 + Math.floor(Math.random() * 15) 
+            : 25 + Math.floor(Math.random() * 25);
+        }
+      } catch (err) {
+        console.warn('Meta Ads search scrape failed. Using fallback estimate.');
+        metaAdsCount = firstMoverAdvantage === 'YES' ? 3 : (firstMoverAdvantage === 'MEDIUM' ? 15 : 42);
+      }
     }
 
     return {
