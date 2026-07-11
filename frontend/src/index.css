@@ -12,10 +12,12 @@
   --color-brand-800: #1e40af;
   --color-brand-900: #1e3a8a;
   --color-brand-950: #172554;
+  --text-xxs: 0.65rem;
 }
 
 body {
   @apply bg-slate-50 text-slate-900 antialiased dark:bg-[#09090b] dark:text-zinc-100 transition-colors duration-500;
+  -webkit-text-size-adjust: 100%;
 }
 
 /* Minimal Grid Background */
@@ -51,3 +53,19 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-slate-400 dark:bg-zinc-600;
 }
+
+/* Mobile touch-friendly hover states */
+@media (hover: none) {
+  .group:active .group-hover\:opacity-100 {
+    opacity: 1;
+  }
+  .group:active .group-hover\:scale-105 {
+    transform: scale(1.05);
+  }
+}
+
+/* Ensure images don't overflow on mobile */
+img {
+  max-width: 100%;
+}
+

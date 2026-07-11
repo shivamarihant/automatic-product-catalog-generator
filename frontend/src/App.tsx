@@ -201,17 +201,17 @@ function App() {
       
       {/* Premium Studio Header */}
       {!selectedProduct && !showAddProduct && (
-        <header className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 shadow-sm px-4 py-2 relative z-40 print:hidden transition-colors duration-500 rounded-full mx-auto max-w-fit mt-4 flex items-center justify-between gap-6">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-brand-500 flex items-center justify-center shadow-md shadow-brand-500/20 transform transition-transform group-hover:scale-105">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <header className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 shadow-sm px-4 py-2.5 relative z-40 print:hidden transition-colors duration-500 rounded-full mx-3 sm:mx-auto mt-4 flex items-center justify-between gap-4" style={{ width: 'fit-content', maxWidth: 'calc(100vw - 24px)' }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center shadow-md shadow-brand-500/20 shrink-0">
+            <svg style={{ width: '18px', height: '18px' }} className="text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
           </div>
-          <img src="/assets/importerr-logo.png" alt="importerr.com" className="h-5 object-contain" />
+          <img src="/assets/importerr-logo.png" alt="importerr.com" style={{ height: '20px', width: 'auto', display: 'block' }} />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
             className="hidden w-8 h-8 flex items-center justify-center bg-white hover:bg-slate-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-300 rounded-full border border-slate-200 dark:border-zinc-700 transition-all cursor-pointer shadow-sm"
@@ -232,17 +232,17 @@ function App() {
               setSelectedProduct(null);
               setActiveCatalog(null);
             }}
-            className="flex items-center gap-1.5 px-5 py-2 bg-brand-500 hover:bg-brand-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer shadow-md shadow-brand-500/20"
+            className="flex items-center gap-1.5 px-4 sm:px-5 py-2 bg-brand-500 hover:bg-brand-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer shadow-md shadow-brand-500/20"
           >
             <Plus className="w-3.5 h-3.5" />
-            NEW PRODUCT
+            <span className="hidden xs:inline">New</span> Product
           </button>
         </div>
       </header>
       )}
 
       {/* Main Workspace Wrapper */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 flex flex-col gap-6 print:p-0">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 flex flex-col gap-4 sm:gap-6 print:p-0">
         
         {/* Top: Sourcing Nodes List / Settings */}
         {!selectedProduct && !showAddProduct && (
@@ -274,8 +274,8 @@ function App() {
           )}
 
           {/* Sourcing Nodes Folder */}
-          <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 shadow-sm rounded-[2rem] p-6 lg:p-8 flex flex-col transition-all">
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 shadow-sm rounded-[2rem] p-4 sm:p-6 lg:p-8 flex flex-col transition-all">
+            <div className="flex justify-between items-center mb-4 sm:mb-6">
               <h3 className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-2">
                 <FolderOpen className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
                 Sourcing Nodes
@@ -286,7 +286,7 @@ function App() {
             </div>
 
             {/* Search Input */}
-            <div className="mb-6 relative">
+            <div className="mb-4 sm:mb-6 relative">
               <Search className="w-4 h-4 text-slate-400 dark:text-zinc-500 absolute left-4 top-1/2 transform -translate-y-1/2" />
               <input
                 type="text"
@@ -298,13 +298,13 @@ function App() {
             </div>
 
             {errorMsg && (
-              <div className="m-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-105 text-red-700 dark:text-red-400 text-xs rounded-xl">
+              <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-105 text-red-700 dark:text-red-400 text-xs rounded-xl mb-4">
                 {errorMsg}
               </div>
             )}
 
             {/* Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
               {products
                 .filter(p => p.productName.toLowerCase().includes(searchQuery.toLowerCase()))
                 .map((prod) => {
@@ -315,18 +315,20 @@ function App() {
                       className="group flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 rounded-[1.5rem] overflow-hidden cursor-pointer hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/50 transition-all duration-300"
                     >
                       {/* Image Header with Score Overlay */}
-                      <div className="aspect-[4/3] bg-slate-50 dark:bg-zinc-950 overflow-hidden relative border-b border-slate-100 dark:border-zinc-800">
+                      <div className="relative w-full pt-[75%] bg-slate-50 dark:bg-zinc-950 overflow-hidden border-b border-slate-100 dark:border-zinc-800">
                         <img 
                           src={getSecureUrl(prod.images[0])} 
                           alt="Product" 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                          crossOrigin="anonymous"
+                          loading="lazy"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500&auto=format&fit=crop&q=80';
                           }}
                         />
                         {/* Score Badge floating on image */}
                         {prod.calculations && (
-                          <div className="absolute top-3 right-3 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5">
+                          <div className="absolute top-3 right-3 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 z-10">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                             <span className="text-[10px] font-extrabold text-slate-700 dark:text-zinc-200 uppercase tracking-widest">
                               Score: {prod.calculations.opportunityScore}
@@ -508,50 +510,50 @@ function App() {
                 <>
                   {/* Sourcing Node is Selected, but either no catalogs exist or they clicked 'New Version' */}
                   {(showGenerateNewForm || productCatalogs.length === 0) && (
-                    <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 space-y-6 print:hidden">
+                    <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-4 sm:p-6 space-y-5 print:hidden">
                       
-                      <div className="flex justify-between items-start border-b border-slate-100 pb-4">
-                        <div>
+                      <div className="flex flex-wrap justify-between items-start gap-3 border-b border-slate-100 pb-4">
+                        <div className="min-w-0">
                           <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-bold uppercase tracking-wider">
                             {productCatalogs.length === 0 ? 'Unanalyzed Sourcing Node' : 'Generate New Sourcing Snapshot'}
                           </span>
-                          <h2 className="text-xl font-bold text-slate-800 mt-2">{selectedProduct.productName}</h2>
+                          <h2 className="text-lg font-bold text-slate-800 mt-2 line-clamp-2">{selectedProduct.productName}</h2>
                         </div>
                         {productCatalogs.length > 0 && (
                           <button
                             onClick={() => setShowGenerateNewForm(false)}
-                            className="text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer"
+                            className="text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer shrink-0"
                           >
                             Cancel
                           </button>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                          <span className="text-xxs font-semibold text-slate-400 block mb-1">Product Cost</span>
-                          <span className="text-md font-bold text-slate-800">₹{selectedProduct.cost}</span>
+                      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                        <div className="bg-slate-50/50 p-3 sm:p-4 rounded-xl border border-slate-100">
+                          <span className="text-[9px] font-semibold text-slate-400 block mb-1">Product Cost</span>
+                          <span className="text-sm font-bold text-slate-800">₹{selectedProduct.cost}</span>
                         </div>
-                        <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                          <span className="text-xxs font-semibold text-slate-400 block mb-1">Sourcing MOQ</span>
-                          <span className="text-md font-bold text-slate-800">{selectedProduct.moq} Pieces</span>
+                        <div className="bg-slate-50/50 p-3 sm:p-4 rounded-xl border border-slate-100">
+                          <span className="text-[9px] font-semibold text-slate-400 block mb-1">MOQ</span>
+                          <span className="text-sm font-bold text-slate-800">{selectedProduct.moq} pcs</span>
                         </div>
-                        <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                          <span className="text-xxs font-semibold text-slate-400 block mb-1">Target Price</span>
-                          <span className="text-md font-bold text-slate-800">₹{selectedProduct.tentativeSellingPrice}</span>
+                        <div className="bg-slate-50/50 p-3 sm:p-4 rounded-xl border border-slate-100">
+                          <span className="text-[9px] font-semibold text-slate-400 block mb-1">Target Price</span>
+                          <span className="text-sm font-bold text-slate-800">₹{selectedProduct.tentativeSellingPrice}</span>
                         </div>
                       </div>
 
                       {/* Catalog Compilation Info */}
-                      <div className="bg-slate-50 border border-slate-150 p-5 rounded-2xl space-y-4">
+                      <div className="bg-slate-50 border border-slate-150 p-4 sm:p-5 rounded-2xl space-y-4">
                         <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                           <FileText className="w-4 h-4 text-brand-500" />
                           Catalog Sheet Configuration
                         </h3>
                         
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                           <div>
-                            <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Catalog Sheet Title</label>
+                            <label className="block text-[9px] font-bold text-slate-500 uppercase mb-2">Catalog Sheet Title</label>
                             <input
                               type="text"
                               value={catalogTitle}
@@ -560,7 +562,7 @@ function App() {
                             />
                           </div>
                           <div>
-                            <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Prepared By (Author)</label>
+                            <label className="block text-[9px] font-bold text-slate-500 uppercase mb-2">Prepared By (Author)</label>
                             <input
                               type="text"
                               value={preparedBy}
@@ -585,20 +587,20 @@ function App() {
                   {!showGenerateNewForm && productCatalogs.length > 0 && activeCatalog && (
                     <div className="space-y-4">
                       {/* Historical Report Version Archive Selector bar */}
-                      <div className="bg-white border border-slate-150 px-4 py-2 rounded-2xl shadow-sm flex flex-wrap items-center justify-between gap-3 print:hidden">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-xxs font-bold text-slate-400 uppercase tracking-widest text-[10px]">Selected Sourcing Snapshot:</span>
+                      <div className="bg-white border border-slate-150 px-3 sm:px-4 py-2.5 rounded-2xl shadow-sm flex flex-wrap items-center justify-between gap-3 print:hidden">
+                        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Snapshot:</span>
                           <select
                             value={activeCatalog._id}
                             onChange={(e) => {
                               const cat = productCatalogs.find(c => c._id === e.target.value);
                               if (cat) setActiveCatalog(cat);
                             }}
-                            className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none cursor-pointer hover:border-slate-350 mb-0"
+                            className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none cursor-pointer hover:border-slate-350 min-w-0 flex-1"
                           >
                             {productCatalogs.map((cat) => (
                               <option key={cat._id} value={cat._id}>
-                                {new Date(cat.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })} - {cat.catalogTitle} ({cat.preparedBy})
+                                {new Date(cat.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })} - {cat.catalogTitle}
                               </option>
                             ))}
                           </select>
@@ -606,10 +608,11 @@ function App() {
 
                         <button
                           onClick={() => setShowGenerateNewForm(true)}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm mb-0"
+                          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
                         >
                           <Plus className="w-3.5 h-3.5" />
-                          New Version
+                          <span className="hidden sm:inline">New Version</span>
+                          <span className="sm:hidden">New</span>
                         </button>
                       </div>
 
