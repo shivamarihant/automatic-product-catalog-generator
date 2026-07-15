@@ -458,12 +458,12 @@ async function countMarketplaceSellersViaSerper(
   const adsQuery = adsQueryName || productName;
   const coreNoun = getCoreNoun(adsQuery);
 
-  // Run standard marketplace searches in parallel
+  // Run standard marketplace searches in parallel using site: operator for accuracy
   const [amazonData, flipkartData, meeshoData, jiomartData] = await Promise.all([
-    serperSearch(`amazon.in ${productName}`, `amazon.`),
-    serperSearch(`flipkart.com ${productName}`, `flipkart.com`),
-    serperSearch(`meesho.com ${productName}`, `meesho.com`),
-    serperSearch(`jiomart.com ${productName}`, `jiomart.com`)
+    serperSearch(`site:amazon.in ${productName}`, `amazon.in`),
+    serperSearch(`site:flipkart.com ${productName}`, `flipkart.com`),
+    serperSearch(`site:meesho.com ${productName}`, `meesho.com`),
+    serperSearch(`site:jiomart.com ${productName}`, `jiomart.com`)
   ]);
 
   const normalize = (data: { organic: number; total: number }, divisor: number, cap: number): number => {

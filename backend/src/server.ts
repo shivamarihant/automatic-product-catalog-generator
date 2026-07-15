@@ -147,23 +147,46 @@ app.post('/api/catalog/generate/:productId', async (req, res) => {
     }
 
     console.log(`Step 1: Fetching Market Intelligence for ${product.productName}...`);
-    const fetchedData = await fetchMarketIntelligence(product.productName, product.simplifiedName);
+    
+    // Always run real-time competitor research (using Serper/Gemini, etc.)
+    let analysis;
+    try {
+      analysis = await analyzeCompetitorsWithAI(product.productName, product.images);
+    } catch (err: any) {
+      console.warn('Real-time AI research failed, using heuristics. Error:', err.message);
+      analysis = {
+        amazon: 0,
+        flipkart: 0,
+        meesho: 0,
+        jiomart: 0,
+        shopifyStores: ['No live competitor URLs found'],
+        adsCount: 0,
+        simplifiedName: product.simplifiedName || product.productName
+      };
+    }
 
-    // Sync with actual researched marketplace sellers and ads count
-    if (product.marketplaceSellers) {
-      const actualSellers = 
-        (product.marketplaceSellers.amazon || 0) + 
-        (product.marketplaceSellers.flipkart || 0) + 
-        (product.marketplaceSellers.meesho || 0) + 
-        (product.marketplaceSellers.jiomart || 0);
-      
-      if (actualSellers > 0) {
-        fetchedData.approxSellers = actualSellers;
-      }
+    // Update the product's marketplace sellers and ads count with the fresh real-time analysis
+    product.marketplaceSellers = {
+      amazon: analysis.amazon || 0,
+      flipkart: analysis.flipkart || 0,
+      meesho: analysis.meesho || 0,
+      jiomart: analysis.jiomart || 0
+    };
+    product.shopifyStores = analysis.shopifyStores && analysis.shopifyStores.length > 0 ? analysis.shopifyStores : ['No live competitor URLs found'];
+    product.adsCount = analysis.adsCount || 0;
+    if (analysis.simplifiedName) {
+      product.simplifiedName = analysis.simplifiedName;
     }
-    if (product.adsCount !== undefined && product.adsCount !== null) {
-      fetchedData.metaAdsCount = product.adsCount;
-    }
+
+    const fetchedData = await fetchMarketIntelligence(product.productName, product.simplifiedName);
+    
+    // Use the actual total sellers from the live analysis
+    fetchedData.approxSellers = 
+      product.marketplaceSellers.amazon + 
+      product.marketplaceSellers.flipkart + 
+      product.marketplaceSellers.meesho + 
+      product.marketplaceSellers.jiomart;
+    fetchedData.metaAdsCount = product.adsCount;
 
     console.log('Step 2: Calculating Metrics...');
     const calculations = performCalculations(
@@ -172,39 +195,11 @@ app.post('/api/catalog/generate/:productId', async (req, res) => {
       product.logistics.shippingCost,
       product.rtoPercentage,
       fetchedData.firstMoverAdvantage,
-      product.shopifyStores || [],
-      product.marketplaceSellers || { amazon: 0, flipkart: 0, meesho: 0, jiomart: 0 },
+      product.shopifyStores,
+      product.marketplaceSellers,
       product.upsellPotential || 'MEDIUM',
       product.lowerCac || 'MEDIUM'
     );
-
-    // Auto-populate ads count if not entered manually
-    if (!product.adsCount || product.adsCount === 0) {
-      product.adsCount = fetchedData.metaAdsCount;
-    }
-
-    // Auto-populate marketplace sellers if they are default fallback or zero
-    const isDefaultSellers = 
-      !product.marketplaceSellers ||
-      (product.marketplaceSellers.amazon === 12 &&
-       product.marketplaceSellers.flipkart === 8 &&
-       product.marketplaceSellers.meesho === 6 &&
-       product.marketplaceSellers.jiomart === 3) ||
-      (product.marketplaceSellers.amazon === 0 &&
-       product.marketplaceSellers.flipkart === 0 &&
-       product.marketplaceSellers.meesho === 0 &&
-       product.marketplaceSellers.jiomart === 0);
-
-    if (isDefaultSellers) {
-      const approx = fetchedData.approxSellers || 15;
-      // Distribute approxSellers across marketplaces dynamically
-      product.marketplaceSellers = {
-        amazon: Math.max(1, Math.round(approx * 0.45)),
-        flipkart: Math.max(1, Math.round(approx * 0.30)),
-        meesho: Math.max(1, Math.round(approx * 0.18)),
-        jiomart: Math.max(1, Math.round(approx * 0.07))
-      };
-    }
 
     // Update Product object temporarily to run recommendation
     const tempProduct = {
