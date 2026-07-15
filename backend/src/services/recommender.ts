@@ -418,12 +418,13 @@ async function countMarketplaceSellersViaSerper(
     return { amazon: 0, flipkart: 0, meesho: 0, jiomart: 0, adsCount: 0 };
   }
 
-  const serperSearch = async (query: string, domainPattern: string): Promise<{ organic: number; total: number }> => {
+  // serperSearch: num=15 for ads (speed), num=30 for marketplaces (more organic hits)
+  const serperSearch = async (query: string, domainPattern: string, num = 15): Promise<{ organic: number; total: number }> => {
     try {
       const res = await fetch('https://google.serper.dev/search', {
         method: 'POST',
         headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: query, gl: 'in', hl: 'en', num: 15 })
+        body: JSON.stringify({ q: query, gl: 'in', hl: 'en', num })
       });
       if (!res.ok) {
         const err = await res.text();
@@ -458,17 +459,20 @@ async function countMarketplaceSellersViaSerper(
   const adsQuery = adsQueryName || productName;
   const coreNoun = getCoreNoun(adsQuery);
 
-  // Run standard marketplace searches in parallel using site: operator for accuracy
+  // Run marketplace searches WITHOUT site: operator — site: queries return 0 organic results in Serper
+  // Use num:30 to capture more organic listings (each = a real seller listing in Google)
   const [amazonData, flipkartData, meeshoData, jiomartData] = await Promise.all([
-    serperSearch(`site:amazon.in ${productName}`, `amazon.in`),
-    serperSearch(`site:flipkart.com ${productName}`, `flipkart.com`),
-    serperSearch(`site:meesho.com ${productName}`, `meesho.com`),
-    serperSearch(`site:jiomart.com ${productName}`, `jiomart.com`)
+    serperSearch(`amazon.in ${productName}`, `amazon.in`, 30),
+    serperSearch(`flipkart.com ${productName}`, `flipkart.com`, 30),
+    serperSearch(`meesho.com ${productName}`, `meesho.com`, 30),
+    serperSearch(`jiomart.com ${productName}`, `jiomart.com`, 30)
   ]);
 
+  // Use organic count as floor (each organic hit = a real listing on that marketplace).
+  // If Google also reports totalResults, scale it down and take the max of both.
   const normalize = (data: { organic: number; total: number }, divisor: number, cap: number): number => {
-    if (data.total > 0) return Math.min(Math.max(1, Math.round(data.total / divisor)), cap);
-    return Math.max(0, data.organic);
+    const fromTotal = data.total > 0 ? Math.round(data.total / divisor) : 0;
+    return Math.min(cap, Math.max(data.organic, fromTotal));
   };
 
   // Perform multi-layered Ads search queries
