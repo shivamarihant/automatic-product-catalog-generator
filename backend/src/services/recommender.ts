@@ -447,7 +447,15 @@ async function countMarketplaceSellersViaSerper(
 
       return {
         organic: matchingOrganic.length,
-        total: total > 0 ? Math.round(total * (matchingOrganic.length / Math.max(1, organicList.length))) : 0
+        // FIX: when no organic results are returned (common with site: operator queries in Serper),
+        // the old formula 'totalResults × (0/N)' always produced 0, discarding Google's index count.
+        // If organicList is empty we assume ALL results would match (scale = 1.0) so totalResults
+        // flows through directly — this is the correct behaviour for site: catalog-size queries.
+        total: (() => {
+          if (total <= 0) return 0;
+          if (organicList.length === 0) return total; // site: query: use totalResults directly
+          return Math.round(total * (matchingOrganic.length / organicList.length));
+        })()
       };
     } catch (err: any) {
       console.error('[Serper] Network error:', err.message);
@@ -508,16 +516,32 @@ async function countMarketplaceSellersViaSerper(
     }
   })();
 
-  // ── FALLBACK: web-search for any marketplace Shopping didn't cover (e.g. Meesho/JioMart) ──
-  // Each organic result whose URL contains the marketplace domain = one real listing.
+  // ── SECONDARY: site: catalog-size queries (run in parallel with Shopping) ──────────────────────
+  // 'site:flipkart.com stamp eyeliner' asks Google how many Flipkart pages match this product.
+  // With the fixed scaling above, totalResults flows through directly (no ×0 bug).
+  // We then divide by a per-marketplace page-to-product ratio to estimate unique listings:
+  //   Amazon  ÷ 10  (many page types per ASIN: product, variants, reviews, seller pages)
+  //   Flipkart ÷ 6  (product page + a few category/brand pages per item)
+  //   Meesho   ÷ 4  (simpler URL structure, fewer pages per product)
+  //   JioMart  ÷ 3  (smallest catalog, fewest pages per item)
+  const [amazonSite, flipkartSite, meeshoSite, jiomartSite] = await Promise.all([
+    serperSearch(`site:amazon.in ${productName}`,    `amazon.`,    5),
+    serperSearch(`site:flipkart.com ${productName}`, `flipkart.com`, 5),
+    serperSearch(`site:meesho.com ${productName}`,   `meesho.com`,   5),
+    serperSearch(`site:jiomart.com ${productName}`,  `jiomart.com`,  5)
+  ]);
+  console.log(`[Serper Site:] Amazon total=${amazonSite.total}, Flipkart total=${flipkartSite.total}, Meesho total=${meeshoSite.total}, JioMart total=${jiomartSite.total}`);
+
+  // ── TERTIARY FALLBACK: web-search organic for any marketplace still at 0 ────────────────────────
+  // Each organic result whose URL contains the marketplace domain = one real listing page.
   const [amazonFb, flipkartFb, meeshoFb, jiomartFb] = await Promise.all([
-    shoppingCounts.amazon   > 0 ? Promise.resolve({ organic: 0, total: 0 }) : serperSearch(`amazon.in ${productName}`,    `amazon.`,    30),
-    shoppingCounts.flipkart > 0 ? Promise.resolve({ organic: 0, total: 0 }) : serperSearch(`flipkart.com ${productName}`, `flipkart.com`, 30),
-    shoppingCounts.meesho   > 0 ? Promise.resolve({ organic: 0, total: 0 }) : serperSearch(`meesho.com ${productName}`,   `meesho.com`,   30),
-    shoppingCounts.jiomart  > 0 ? Promise.resolve({ organic: 0, total: 0 }) : serperSearch(`jiomart.com ${productName}`,  `jiomart.com`,  30)
+    (shoppingCounts.amazon   > 0 || amazonSite.total   > 0) ? Promise.resolve({ organic: 0, total: 0 }) : serperSearch(`amazon.in ${productName}`,    `amazon.`,    30),
+    (shoppingCounts.flipkart > 0 || flipkartSite.total > 0) ? Promise.resolve({ organic: 0, total: 0 }) : serperSearch(`flipkart.com ${productName}`, `flipkart.com`, 30),
+    (shoppingCounts.meesho   > 0 || meeshoSite.total   > 0) ? Promise.resolve({ organic: 0, total: 0 }) : serperSearch(`meesho.com ${productName}`,   `meesho.com`,   30),
+    (shoppingCounts.jiomart  > 0 || jiomartSite.total  > 0) ? Promise.resolve({ organic: 0, total: 0 }) : serperSearch(`jiomart.com ${productName}`,  `jiomart.com`,  30)
   ]);
 
-  // Normalize web-search fallback (each organic hit = 1 listing; scale totalResults if present)
+  // Normalize: returns the best estimate from totalResults (÷ divisor) or organic count
   const normalize = (data: { organic: number; total: number }, divisor: number, cap: number): number => {
     const fromTotal = data.total > 0 ? Math.round(data.total / divisor) : 0;
     return Math.min(cap, Math.max(data.organic, fromTotal));
@@ -547,12 +571,15 @@ async function countMarketplaceSellersViaSerper(
   const totalCampaigns = Math.max(normalizedSpecific + brandAdsCount, normalizedBroad);
   const adsCount = Math.max(1, totalCampaigns) * 4;
 
-  // Merge: Shopping count is primary; web-search fallback fills in where Shopping returned 0
+  // Final: take the MAXIMUM across all three sources per marketplace.
+  // Shopping = actual product listing count (best for Amazon/Flipkart)
+  // site: index = Google's full catalog estimate (consistent across all 4 platforms)
+  // Fallback organic = direct URL match count (last resort)
   const result = {
-    amazon:   Math.max(shoppingCounts.amazon,   normalize(amazonFb,   3, 9999)),
-    flipkart: Math.max(shoppingCounts.flipkart, normalize(flipkartFb, 3, 9999)),
-    meesho:   Math.max(shoppingCounts.meesho,   normalize(meeshoFb,   2, 9999)),
-    jiomart:  Math.max(shoppingCounts.jiomart,  normalize(jiomartFb,  2, 9999)),
+    amazon:   Math.max(shoppingCounts.amazon,   normalize(amazonSite,   10, 9999), normalize(amazonFb,   3, 9999)),
+    flipkart: Math.max(shoppingCounts.flipkart, normalize(flipkartSite,  6, 9999), normalize(flipkartFb, 3, 9999)),
+    meesho:   Math.max(shoppingCounts.meesho,   normalize(meeshoSite,    4, 9999), normalize(meeshoFb,   2, 9999)),
+    jiomart:  Math.max(shoppingCounts.jiomart,  normalize(jiomartSite,   3, 9999), normalize(jiomartFb,  2, 9999)),
     adsCount
   };
 
