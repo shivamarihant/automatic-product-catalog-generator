@@ -461,12 +461,23 @@ async function countMarketplaceSellersViaSerper(
 
   // Run marketplace searches WITHOUT site: operator — site: queries return 0 organic results in Serper
   // Use num:30 to capture more organic listings (each = a real seller listing in Google)
-  const [amazonData, flipkartData, meeshoData, jiomartData] = await Promise.all([
-    serperSearch(`amazon.in ${productName}`, `amazon.in`, 30),
+  //
+  // IMPORTANT — Amazon note: Google routes Amazon India traffic through amazon.com (global CDN)
+  // so `amazon.in` links rarely appear. Use the broader `amazon.` pattern which matches
+  // both amazon.in AND amazon.com to capture all Amazon India seller listings correctly.
+  // We also run a secondary query `amazon india {product}` as fallback and take the max.
+  const [amazonPrimary, amazonSecondary, flipkartData, meeshoData, jiomartData] = await Promise.all([
+    serperSearch(`amazon.in ${productName}`,    `amazon.`, 30),
+    serperSearch(`amazon india ${productName}`, `amazon.`, 30),
     serperSearch(`flipkart.com ${productName}`, `flipkart.com`, 30),
-    serperSearch(`meesho.com ${productName}`, `meesho.com`, 30),
-    serperSearch(`jiomart.com ${productName}`, `jiomart.com`, 30)
+    serperSearch(`meesho.com ${productName}`,   `meesho.com`,   30),
+    serperSearch(`jiomart.com ${productName}`,  `jiomart.com`,  30)
   ]);
+  // Merge both Amazon queries: take whichever gives a higher count
+  const amazonData = {
+    organic: Math.max(amazonPrimary.organic, amazonSecondary.organic),
+    total:   Math.max(amazonPrimary.total,   amazonSecondary.total)
+  };
 
   // Use organic count as floor (each organic hit = a real listing on that marketplace).
   // If Google also reports totalResults, scale it down and take the max of both.
