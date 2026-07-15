@@ -459,28 +459,65 @@ async function countMarketplaceSellersViaSerper(
   const adsQuery = adsQueryName || productName;
   const coreNoun = getCoreNoun(adsQuery);
 
-  // Run marketplace searches WITHOUT site: operator — site: queries return 0 organic results in Serper
-  // Use num:30 to capture more organic listings (each = a real seller listing in Google)
-  //
-  // IMPORTANT — Amazon note: Google routes Amazon India traffic through amazon.com (global CDN)
-  // so `amazon.in` links rarely appear. Use the broader `amazon.` pattern which matches
-  // both amazon.in AND amazon.com to capture all Amazon India seller listings correctly.
-  // We also run a secondary query `amazon india {product}` as fallback and take the max.
-  const [amazonPrimary, amazonSecondary, flipkartData, meeshoData, jiomartData] = await Promise.all([
-    serperSearch(`amazon.in ${productName}`,    `amazon.`, 30),
-    serperSearch(`amazon india ${productName}`, `amazon.`, 30),
-    serperSearch(`flipkart.com ${productName}`, `flipkart.com`, 30),
-    serperSearch(`meesho.com ${productName}`,   `meesho.com`,   30),
-    serperSearch(`jiomart.com ${productName}`,  `jiomart.com`,  30)
-  ]);
-  // Merge both Amazon queries: take whichever gives a higher count
-  const amazonData = {
-    organic: Math.max(amazonPrimary.organic, amazonSecondary.organic),
-    total:   Math.max(amazonPrimary.total,   amazonSecondary.total)
-  };
+  // ── PRIMARY: Google Shopping — each result is a real product listing on that store ──
+  // This is the most accurate source. A Shopping result for "stamp eyeliner" from
+  // "Amazon.in" directly corresponds to one seller listing on Amazon India.
+  // We ask for 100 items (max) then scale by totalResults to approximate full catalog size.
+  const shoppingCounts = await (async () => {
+    const zero = { amazon: 0, flipkart: 0, meesho: 0, jiomart: 0 };
+    try {
+      const res = await fetch('https://google.serper.dev/shopping', {
+        method: 'POST',
+        headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: productName, gl: 'in', hl: 'en', num: 100 })
+      });
+      if (!res.ok) {
+        console.error('[Serper Shopping] HTTP', res.status);
+        return zero;
+      }
+      const d = await res.json();
+      const items: any[] = d.shopping || [];
+      const raw = { ...zero };
 
-  // Use organic count as floor (each organic hit = a real listing on that marketplace).
-  // If Google also reports totalResults, scale it down and take the max of both.
+      for (const item of items) {
+        const src = (item.source || '').toLowerCase();
+        const lnk = (item.link || item.productLink || '').toLowerCase();
+        if      (src.includes('amazon')   || lnk.includes('amazon.'))   raw.amazon++;
+        else if (src.includes('flipkart') || lnk.includes('flipkart.')) raw.flipkart++;
+        else if (src.includes('meesho')   || lnk.includes('meesho.'))   raw.meesho++;
+        else if (src.includes('jiomart')  || lnk.includes('jiomart.'))  raw.jiomart++;
+      }
+
+      // Scale up: Google Shopping shows a sample; totalResults is the full catalog count.
+      // Proportionally extrapolate each marketplace count to the full size.
+      const rawTotalStr = d.searchInformation?.totalResults || '0';
+      const totalAll = parseInt(rawTotalStr.replace(/,/g, '').replace(/\./g, ''), 10) || 0;
+      const result = { ...raw };
+      if (totalAll > items.length && items.length > 0) {
+        const scale = totalAll / items.length;
+        for (const k of Object.keys(result) as (keyof typeof result)[]) {
+          if (result[k] > 0) result[k] = Math.round(result[k] * scale);
+        }
+      }
+
+      console.log(`[Serper Shopping] Sample=${items.length} Total=${totalAll} → Amazon=${result.amazon}, Flipkart=${result.flipkart}, Meesho=${result.meesho}, JioMart=${result.jiomart}`);
+      return result;
+    } catch (e: any) {
+      console.error('[Serper Shopping] Error:', e.message);
+      return zero;
+    }
+  })();
+
+  // ── FALLBACK: web-search for any marketplace Shopping didn't cover (e.g. Meesho/JioMart) ──
+  // Each organic result whose URL contains the marketplace domain = one real listing.
+  const [amazonFb, flipkartFb, meeshoFb, jiomartFb] = await Promise.all([
+    shoppingCounts.amazon   > 0 ? Promise.resolve({ organic: 0, total: 0 }) : serperSearch(`amazon.in ${productName}`,    `amazon.`,    30),
+    shoppingCounts.flipkart > 0 ? Promise.resolve({ organic: 0, total: 0 }) : serperSearch(`flipkart.com ${productName}`, `flipkart.com`, 30),
+    shoppingCounts.meesho   > 0 ? Promise.resolve({ organic: 0, total: 0 }) : serperSearch(`meesho.com ${productName}`,   `meesho.com`,   30),
+    shoppingCounts.jiomart  > 0 ? Promise.resolve({ organic: 0, total: 0 }) : serperSearch(`jiomart.com ${productName}`,  `jiomart.com`,  30)
+  ]);
+
+  // Normalize web-search fallback (each organic hit = 1 listing; scale totalResults if present)
   const normalize = (data: { organic: number; total: number }, divisor: number, cap: number): number => {
     const fromTotal = data.total > 0 ? Math.round(data.total / divisor) : 0;
     return Math.min(cap, Math.max(data.organic, fromTotal));
@@ -510,15 +547,16 @@ async function countMarketplaceSellersViaSerper(
   const totalCampaigns = Math.max(normalizedSpecific + brandAdsCount, normalizedBroad);
   const adsCount = Math.max(1, totalCampaigns) * 4;
 
+  // Merge: Shopping count is primary; web-search fallback fills in where Shopping returned 0
   const result = {
-    amazon:   normalize(amazonData,   3, 9999),
-    flipkart: normalize(flipkartData, 3, 9999),
-    meesho:   normalize(meeshoData,   2, 9999),
-    jiomart:  normalize(jiomartData,  2, 9999),
+    amazon:   Math.max(shoppingCounts.amazon,   normalize(amazonFb,   3, 9999)),
+    flipkart: Math.max(shoppingCounts.flipkart, normalize(flipkartFb, 3, 9999)),
+    meesho:   Math.max(shoppingCounts.meesho,   normalize(meeshoFb,   2, 9999)),
+    jiomart:  Math.max(shoppingCounts.jiomart,  normalize(jiomartFb,  2, 9999)),
     adsCount
   };
 
-  console.log(`[Serper] Real counts — Amazon: ${result.amazon}, Flipkart: ${result.flipkart}, Meesho: ${result.meesho}, JioMart: ${result.jiomart}, Ads: ${result.adsCount}`);
+  console.log(`[Serper] Final counts — Amazon: ${result.amazon}, Flipkart: ${result.flipkart}, Meesho: ${result.meesho}, JioMart: ${result.jiomart}, Ads: ${result.adsCount}`);
   return result;
 }
 
