@@ -104,10 +104,28 @@ import path from 'path';
 // ─── Gemini: simplify product name for optimal search results ─────────────────
 async function getSimplifiedProductName(productName: string, images: string[]): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    // Fallback: extract the first segment before common punctuation, cap at 4 words
-    const clean = productName.split(/[|—–:]| \- /)[0].trim();
+  const runLocalCleanup = (name: string): string => {
+    const clean = name.split(/[|—–:]| \- /)[0].trim();
+    const words = clean.split(/\s+/);
+    const fillerWords = new Set([
+      'perfect', 'made', 'easy', 'best', 'premium', 'hot', 'new', 'free', 'fast', 'discount', 'sale',
+      'clearance', 'original', 'professional', 'high', 'quality', 'elegance', 'luxury', 'cute', 'beautiful',
+      'fashion', 'trending', 'cool', 'special', 'great', 'use', 'quick', 'simple', 'awesome', 'amazing',
+      'ultimate', 'exclusive', 'top', 'rated', 'guaranteed', 'deluxe', 'classic', 'modern', 'style', 'stylish',
+      'expert', 'smart', 'super', 'ultra', 'mega', 'extreme', 'advanced', 'innovative', 'revolutionary',
+      'genuine', 'pure', 'natural', 'organic', 'healthy', 'safe', 'effective', 'powerful', 'miracle', 'magic',
+      'magical', 'essential', 'must', 'have', 'nice', 'wonderful', 'excellent', 'fabulous', 'outstanding',
+      'superior', 'optimum', 'perfectly', 'easily', 'quickly', 'simply'
+    ]);
+    const filtered = words.filter(w => !fillerWords.has(w.toLowerCase().replace(/[^a-z0-9]/gi, '')));
+    if (filtered.length > 0) {
+      return filtered.join(' ');
+    }
     return clean.split(/\s+/).slice(0, 4).join(' ');
+  };
+
+  if (!apiKey) {
+    return runLocalCleanup(productName);
   }
 
   try {
@@ -123,7 +141,6 @@ Respond ONLY with the clean simplified product query. Do not include markdown, e
 
     const parts: any[] = [{ text: prompt }];
 
-    // Attach first image as visual cue if available
     if (images && images.length > 0) {
       try {
         const filename = path.basename(images[0]);
@@ -154,13 +171,14 @@ Respond ONLY with the clean simplified product query. Do not include markdown, e
       if (text && text.trim()) {
         return text.trim().replace(/^["']|["']$/g, '');
       }
+    } else {
+      console.warn(`[Gemini API] Quota or API limit exceeded: Status ${response.status}. Using local cleanup fallback.`);
     }
   } catch (err: any) {
     console.error('[Gemini] Error simplifying product name:', err.message);
   }
 
-  const clean = productName.split(/[|—–:]| \- /)[0].trim();
-  return clean.split(/\s+/).slice(0, 4).join(' ');
+  return runLocalCleanup(productName);
 }
 
 // ─── Gemini: extract a precise visual search query from image analysis ────────
@@ -475,7 +493,7 @@ async function countMarketplaceSellersViaSerper(
       const res = await fetch('https://google.serper.dev/shopping', {
         method: 'POST',
         headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: `"${marketplaceQueryName}" ${productName}`, gl: 'in', hl: 'en', num: 100 })
+        body: JSON.stringify({ q: `${marketplaceQueryName} ${productName}`, gl: 'in', hl: 'en', num: 100 })
       });
       if (!res.ok) {
         console.error(`[Serper Shopping] ${marketplaceQueryName} HTTP error: ${res.status}`);
