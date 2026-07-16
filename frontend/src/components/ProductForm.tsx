@@ -34,6 +34,21 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
   const [width, setWidth] = useState<number>(10);
   const [height, setHeight] = useState<number>(10);
   const [shippingCost, setShippingCost] = useState<number>(50);
+  const [shippingType, setShippingType] = useState<'cosmetics' | 'non-cosmetics'>('non-cosmetics');
+
+  const parseWeightToKg = (weightStr: string): number => {
+    if (!weightStr) return 0;
+    const cleaned = weightStr.trim().toLowerCase();
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return 0;
+    if (cleaned.includes('kg')) {
+      return num;
+    }
+    if (cleaned.includes('g')) {
+      return num / 1000;
+    }
+    return num >= 10 ? num / 1000 : num;
+  };
 
   // Images state
   const [images, setImages] = useState<string[]>([]);
@@ -174,6 +189,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
       return;
     }
 
+    const parsedActualWeight = parseWeightToKg(weight);
+    const dimensionalWeight = (length * width * height) / 5000;
+    const courierVolumetricWeight = Math.max(parsedActualWeight, dimensionalWeight);
+    const calculatedCourierCost = courierVolumetricWeight * (shippingType === 'cosmetics' ? 1400 : 700);
+
     const payload: ProductInput = {
       productName,
       simplifiedName,
@@ -193,7 +213,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
       logistics: {
         weight,
         dimensions: { length, width, height },
-        shippingCost
+        shippingCost: calculatedCourierCost,
+        shippingType
       },
       tentativeSellingPrice,
       rtoPercentage
@@ -515,9 +536,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Courier Volumetric Weight (Calculated)</label>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5">Courier Volumetric Weight (Calculated Max)</label>
                   <div className="px-4 py-3 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm font-semibold text-slate-500 dark:text-zinc-400">
-                    {((length * width * height) / 5000).toFixed(3)} kg
+                    {Math.max(parseWeightToKg(weight), (length * width * height) / 5000).toFixed(3)} kg
                   </div>
                 </div>
               </div>
@@ -566,18 +587,26 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
               <h4 className="text-xs font-bold text-slate-700 dark:text-zinc-300 border-b border-slate-100 dark:border-zinc-800/80 pb-2 mb-3.5">Logistics Freight & Return Projections</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Landed Shipping Rate (₹ per Unit)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={shippingCost || ''}
-                    onChange={(e) => setShippingCost(Number(e.target.value))}
-                    placeholder="e.g. 50"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100 placeholder:text-slate-400"
-                  />
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5">Landed Shipping Category</label>
+                  <select
+                    value={shippingType}
+                    onChange={(e) => setShippingType(e.target.value as 'cosmetics' | 'non-cosmetics')}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-805 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100"
+                  >
+                    <option value="non-cosmetics">Non-Cosmetics (₹700 / kg)</option>
+                    <option value="cosmetics">Cosmetics (₹1,400 / kg)</option>
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Estimated RTO Return (%)</label>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5">Calculated Courier Cost (₹ per Unit)</label>
+                  <div className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-805 bg-slate-100 dark:bg-zinc-955 text-sm font-black text-slate-800 dark:text-zinc-200">
+                    ₹{(Math.max(parseWeightToKg(weight), (length * width * height) / 5000) * (shippingType === 'cosmetics' ? 1400 : 700)).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5">Estimated RTO Return (%)</label>
                   <input
                     type="number"
                     min="0"

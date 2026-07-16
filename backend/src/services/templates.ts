@@ -29,6 +29,24 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
     aiRecommendation: catalog.aiRecommendation || rawProduct.aiRecommendation
   };
 
+  const parseWeightToKg = (weightStr: string): number => {
+    if (!weightStr) return 0;
+    const cleaned = weightStr.trim().toLowerCase();
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return 0;
+    if (cleaned.includes('kg')) {
+      return num;
+    }
+    if (cleaned.includes('g')) {
+      return num / 1000;
+    }
+    return num >= 10 ? num / 1000 : num;
+  };
+
+  const parsedActualWeight = parseWeightToKg(product.logistics.weight);
+  const dimensionalWeight = (product.logistics.dimensions.length * product.logistics.dimensions.width * product.logistics.dimensions.height) / 5000;
+  const courierVolumetricWeight = Math.max(parsedActualWeight, dimensionalWeight).toFixed(2);
+
   const formattedDate = new Date(catalog.createdAt).toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'long',
@@ -713,7 +731,7 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
         <div class="section-title" style="margin-top: 5mm;">Meta Ads Density</div>
         <div class="competitor-card" style="border-left: 4px solid #6366f1; display: flex; justify-content: space-between; align-items: center; gap: 4mm;">
           <span class="competitor-name">Active Product Creatives (Meta Ads Library)</span>
-          <a class="competitor-count" style="color: #6366f1; font-size: 13px; white-space: nowrap; flex-shrink: 0; text-decoration: none;" href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.simplifiedName || product.productName))}&search_type=keyword_unordered" target="_blank">${product.adsCount} Ads Running ↗</a>
+          <a class="competitor-count" style="color: #6366f1; font-size: 13px; white-space: nowrap; flex-shrink: 0; text-decoration: none;" href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.primaryAdsKeywords || product.simplifiedName || product.productName))}&search_type=keyword_unordered" target="_blank">${product.adsCount} Ads Running ↗</a>
         </div>
 
         <div class="section-title" style="margin-top: 5mm;">Amazon Global Traction</div>
@@ -777,16 +795,16 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
       <thead>
         <tr>
           <th>Pack Weight</th>
+          <th>Courier Vol. Wt.</th>
           <th>Dimensions (L x W x H)</th>
-          <th>Logistics Mode</th>
           <th>MOQ Requirement</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td>${product.logistics.weight}</td>
+          <td>${courierVolumetricWeight} kg</td>
           <td>${product.logistics.dimensions.length} x ${product.logistics.dimensions.width} x ${product.logistics.dimensions.height} cm</td>
-          <td>Standard Road/Air Courier</td>
           <td>${product.moq} Units Minimum</td>
         </tr>
       </tbody>

@@ -25,6 +25,7 @@ export interface ProductInput {
       height: number;
     };
     shippingCost: number;
+    shippingType?: 'cosmetics' | 'non-cosmetics';
   };
   tentativeSellingPrice: number;
   rtoPercentage: number;

@@ -345,16 +345,27 @@ function App() {
                         
                         {/* Metrics Grid */}
                         <div className="grid grid-cols-2 gap-3 mb-5 mt-auto">
-                          <div className="bg-slate-50 dark:bg-zinc-950/50 p-3 rounded-xl border border-slate-200 dark:border-zinc-800/80">
-                            <div className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Landed Cost</div>
-                            <div className="text-sm font-extrabold text-slate-700 dark:text-zinc-300">₹{prod.cost}</div>
+                          <div className="bg-slate-50 dark:bg-zinc-950/50 p-3 rounded-xl border border-slate-200 dark:border-zinc-800/80 flex flex-col justify-between">
+                            <div>
+                              <div className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Landed Cost</div>
+                              <div className="text-sm font-extrabold text-slate-700 dark:text-zinc-300">₹{prod.cost}</div>
+                            </div>
+                            <div className="text-[9px] font-bold text-slate-450 dark:text-zinc-500 mt-1 uppercase">MOQ: {prod.moq} pcs</div>
                           </div>
                           <div className="bg-brand-50/50 dark:bg-brand-950/20 p-3 rounded-xl border border-brand-100/50 dark:border-brand-900/30">
-                            <div className="text-[9px] font-bold text-brand-500/80 dark:text-brand-400 uppercase tracking-wider mb-1">Est. Price</div>
+                            <div className="text-[9px] font-bold text-brand-500/80 dark:text-brand-400 uppercase tracking-wider mb-1">EST Selling Price</div>
                             <div className="text-sm font-extrabold text-brand-700 dark:text-brand-400">₹{prod.tentativeSellingPrice || 0}</div>
                           </div>
                         </div>
 
+                        {/* Badges Row */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {prod.calculations && (
+                            <span className="px-2.5 py-1 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 rounded-lg text-[9px] font-bold uppercase tracking-wider">
+                              Margin: {prod.calculations.marginPercentage}% (₹{prod.calculations.margin})
+                            </span>
+                          )}
+                        </div>
                         {/* Sourcing Opportunity Score Spectrum Bar */}
                         {prod.calculations && (
                           <div className="mb-4">
@@ -391,18 +402,6 @@ function App() {
                             </div>
                           </div>
                         )}
-
-                        {/* Badges Row */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          {prod.calculations && (
-                            <span className="px-2.5 py-1 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 rounded-lg text-[9px] font-bold uppercase tracking-wider">
-                              Margin: {prod.calculations.marginPercentage}%
-                            </span>
-                          )}
-                          <span className="px-2.5 py-1 bg-slate-100 dark:bg-zinc-800 text-slate-650 dark:text-zinc-350 rounded-lg text-[9px] font-bold uppercase tracking-wider">
-                            MOQ: {prod.moq} Pcs
-                          </span>
-                        </div>
                       </div>
                     </div>
                   );

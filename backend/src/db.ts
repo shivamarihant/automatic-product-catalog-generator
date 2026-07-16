@@ -7,6 +7,7 @@ export interface Product {
   _id: string;
   productName: string;
   simplifiedName?: string;
+  primaryAdsKeywords?: string;
   images: string[];
   cost: number;
   moq: number;
@@ -26,6 +27,7 @@ export interface Product {
       height: number;
     };
     shippingCost: number;
+    shippingType?: 'cosmetics' | 'non-cosmetics';
   };
   tentativeSellingPrice: number;
   rtoPercentage: number;
@@ -64,6 +66,7 @@ export interface Catalog {
 const ProductSchema = new mongoose.Schema({
   productName: { type: String, required: true },
   simplifiedName: { type: String },
+  primaryAdsKeywords: { type: String },
   images: [String],
   cost: { type: Number, required: true },
   moq: { type: Number, required: true },
@@ -82,7 +85,8 @@ const ProductSchema = new mongoose.Schema({
       width: { type: Number, required: true },
       height: { type: Number, required: true }
     },
-    shippingCost: { type: Number, required: true }
+    shippingCost: { type: Number, required: true },
+    shippingType: { type: String, enum: ['cosmetics', 'non-cosmetics'], default: 'non-cosmetics' }
   },
   tentativeSellingPrice: { type: Number, required: true },
   rtoPercentage: { type: Number, required: true },

@@ -591,6 +591,68 @@ async function countMarketplaceSellersViaSerper(
   return result;
 }
 
+// Extract primary keywords from title for Meta Ads Library search
+async function getPrimaryKeywordsFromTitle(productName: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const runLocalCleanup = (name: string): string => {
+    // Basic cleanup: remove everything after special chars, then remove stop words
+    const clean = name.split(/[|—–:]| \- /)[0].trim();
+    const words = clean.split(/\s+/);
+    const stopWords = new Set([
+      'perfect', 'made', 'easy', 'best', 'premium', 'hot', 'new', 'free', 'fast', 'discount', 'sale',
+      'clearance', 'original', 'professional', 'high', 'quality', 'elegance', 'luxury', 'cute', 'beautiful',
+      'fashion', 'trending', 'cool', 'special', 'great', 'use', 'quick', 'simple', 'awesome', 'amazing',
+      'ultimate', 'exclusive', 'top', 'rated', 'guaranteed', 'deluxe', 'classic', 'modern', 'style', 'stylish',
+      'expert', 'smart', 'super', 'ultra', 'mega', 'extreme', 'advanced', 'innovative', 'revolutionary',
+      'genuine', 'pure', 'natural', 'organic', 'healthy', 'safe', 'effective', 'powerful', 'miracle', 'magic',
+      'magical', 'essential', 'must', 'have', 'nice', 'wonderful', 'excellent', 'fabulous', 'outstanding',
+      'superior', 'optimum', 'perfectly', 'easily', 'quickly', 'simply', 'with', 'and', 'for', 'the', 'a', 'an'
+    ]);
+    const filtered = words.filter(w => !stopWords.has(w.toLowerCase().replace(/[^a-z0-9]/gi, '')));
+    if (filtered.length > 0) {
+      return filtered.join(' ');
+    }
+    return clean;
+  };
+
+  if (!apiKey) {
+    return runLocalCleanup(productName);
+  }
+
+  try {
+    const prompt = `Analyze this product title: "${productName}".
+Extract the primary product keywords that would be most effective for searching related active ads in the Meta Ads Library.
+These should be the main descriptive search terms (usually 2-3 words) that describe the product itself, not brands or promotional adjectives.
+Example:
+Input: "Perfect Winged Liner Made Easy! Double-Ended Eyeliner Stamp" -> Output: "eyeliner stamp"
+Input: "Godzilla Ice Cube Mold – 3D Silicone Freezer Tray for Drinks" -> Output: "ice cube mold"
+Input: "Premium Wireless Bluetooth Earbuds with Noise Cancellation" -> Output: "wireless earbuds"
+
+Respond ONLY with the keywords, with no other text. Do not include markdown, explanations, or quotes.`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      }
+    );
+    if (!response.ok) {
+      return runLocalCleanup(productName);
+    }
+    const d = await response.json();
+    const txt = d.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (txt) {
+      return txt;
+    }
+    return runLocalCleanup(productName);
+  } catch (err) {
+    console.error('[Keywords] Error extracting primary keywords:', err);
+    return runLocalCleanup(productName);
+  }
+}
+
 // ─── Main export: orchestrate both sources ────────────────────────────────
 export async function analyzeCompetitorsWithAI(productName: string, images?: string[]): Promise<{
   amazon: number;
@@ -600,6 +662,7 @@ export async function analyzeCompetitorsWithAI(productName: string, images?: str
   shopifyStores: string[];
   adsCount: number;
   simplifiedName: string;
+  primaryAdsKeywords: string;
 }> {
   console.log(`[Competitor Analysis] Starting for: "${productName}"...`);
 
@@ -613,6 +676,10 @@ export async function analyzeCompetitorsWithAI(productName: string, images?: str
     visualQuery = await getVisualSearchQueryFromImage(productName, images);
     console.log(`[Competitor Analysis] Visual search query extracted: "${visualQuery}"`);
   }
+
+  // Extract primary keywords from title for Meta Ads Library search
+  const primaryAdsKeywords = await getPrimaryKeywordsFromTitle(productName);
+  console.log(`[Competitor Analysis] Primary Ads keywords: "${primaryAdsKeywords}"`);
 
   // 1. Fetch Shopify stores first
   const serperUrls = await fetchCompetitorUrlsViaSerper(visualQuery, productName);
@@ -628,8 +695,8 @@ export async function analyzeCompetitorsWithAI(productName: string, images?: str
     }
   }).filter(Boolean);
 
-  // 3. Count marketplace sellers and ads count (passing competitor brands for ad density matching)
-  const counts = await countMarketplaceSellersViaSerper(simplifiedName, visualQuery, competitorBrands);
+  // 3. Count marketplace sellers and ads count (passing competitor brands and primaryAdsKeywords)
+  const counts = await countMarketplaceSellersViaSerper(simplifiedName, primaryAdsKeywords, competitorBrands);
 
   const shopifyStores = serperUrls.length > 0
     ? serperUrls
@@ -638,6 +705,7 @@ export async function analyzeCompetitorsWithAI(productName: string, images?: str
   return {
     ...counts,
     shopifyStores,
-    simplifiedName: visualQuery
+    simplifiedName: visualQuery,
+    primaryAdsKeywords
   };
 }

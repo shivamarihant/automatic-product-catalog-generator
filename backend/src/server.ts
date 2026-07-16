@@ -177,6 +177,9 @@ app.post('/api/catalog/generate/:productId', async (req, res) => {
     if (analysis.simplifiedName) {
       product.simplifiedName = analysis.simplifiedName;
     }
+    if (analysis.primaryAdsKeywords) {
+      product.primaryAdsKeywords = analysis.primaryAdsKeywords;
+    }
 
     const fetchedData = await fetchMarketIntelligence(product.productName, product.simplifiedName);
     

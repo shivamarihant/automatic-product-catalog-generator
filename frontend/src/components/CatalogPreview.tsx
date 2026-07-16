@@ -82,7 +82,24 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
   const lengthCm = product.logistics.dimensions?.length || 0;
   const widthCm = product.logistics.dimensions?.width || 0;
   const heightCm = product.logistics.dimensions?.height || 0;
-  const volumetricWeightKg = ((lengthCm * widthCm * heightCm) / 5000).toFixed(2);
+  
+  const parseWeightToKg = (weightStr: string): number => {
+    if (!weightStr) return 0;
+    const cleaned = weightStr.trim().toLowerCase();
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return 0;
+    if (cleaned.includes('kg')) {
+      return num;
+    }
+    if (cleaned.includes('g')) {
+      return num / 1000;
+    }
+    return num >= 10 ? num / 1000 : num;
+  };
+
+  const parsedActualWeight = parseWeightToKg(product.logistics.weight);
+  const dimensionalWeight = (lengthCm * widthCm * heightCm) / 5000;
+  const courierVolumetricWeight = Math.max(parsedActualWeight, dimensionalWeight).toFixed(2);
 
   const handleCopyAdvisory = () => {
     if (product.aiRecommendation) {
@@ -170,7 +187,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
           <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 p-4 rounded-2xl shadow-sm relative overflow-hidden flex flex-col justify-between group hover:shadow-md transition-all duration-300">
             <div className="flex justify-between items-start">
               <div>
-                <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Selling Price</span>
+                <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">EST Selling Price</span>
                 <div className="flex items-baseline gap-1 mt-0.5">
                   <span className="text-2xl font-black text-slate-855 dark:text-zinc-100">₹{product.tentativeSellingPrice}</span>
                 </div>
@@ -311,10 +328,10 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                 <div className="bg-slate-50 dark:bg-zinc-955 p-2.5 rounded-xl border border-slate-100/60 dark:border-zinc-900 flex flex-col justify-between min-h-[65px]">
                   <div className="flex items-center gap-1.5 text-slate-400 dark:text-zinc-500">
                     <Ruler className="w-3 h-3" />
-                    <span className="text-[9px] font-bold uppercase tracking-wider">Vol. Wt.</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider">Courier Vol. Wt.</span>
                   </div>
                   <span className="font-extrabold text-slate-800 dark:text-zinc-200 text-sm mt-1">
-                    {volumetricWeightKg} <span className="text-[9px] text-slate-400 dark:text-zinc-550 font-semibold">kg</span>
+                    {courierVolumetricWeight} <span className="text-[9px] text-slate-400 dark:text-zinc-550 font-semibold">kg</span>
                   </span>
                 </div>
 
@@ -416,7 +433,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                       </td>
                     </tr>
                     <tr className="hover:bg-slate-50/50 dark:hover:bg-zinc-955/20 transition-all">
-                      <td className="py-2.5 px-2 font-semibold">Est. Selling Price</td>
+                      <td className="py-2.5 px-2 font-semibold">EST Selling Price</td>
                       <td className="py-2.5 px-2 text-slate-400 dark:text-zinc-500 hidden md:table-cell">Retail price vs competitor index</td>
                       <td className="py-2.5 px-2 font-bold text-slate-900 dark:text-zinc-100 text-right">₹{product.tentativeSellingPrice}</td>
                       <td className="py-2.5 px-2 text-right">
@@ -556,7 +573,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                       <span className="text-base font-black text-slate-800 dark:text-zinc-200">{product.adsCount} Ads</span>
                     </div>
                     <a
-                      href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.simplifiedName || product.productName))}&search_type=keyword_unordered`}
+                      href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.primaryAdsKeywords || product.simplifiedName || product.productName))}&search_type=keyword_unordered`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-[9px] font-black uppercase tracking-wider rounded-lg shadow-sm cursor-pointer whitespace-nowrap"
@@ -800,7 +817,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                 <span className="text-2xl font-black text-slate-800">{product.moq}</span>
               </div>
               <div className="bg-brand-50 border border-brand-100 p-4 rounded-xl flex flex-col items-start justify-center">
-                <span className="text-[9px] font-bold text-brand-600 uppercase tracking-widest mb-1.5">Est. Selling Price</span>
+                <span className="text-[9px] font-bold text-brand-600 uppercase tracking-widest mb-1.5">EST Selling Price</span>
                 <span className="text-2xl font-black text-brand-700">₹{product.tentativeSellingPrice}</span>
               </div>
               <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex flex-col items-start justify-center">
@@ -827,7 +844,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                   <td className="py-3.5 px-2 text-slate-500 text-right">Landed Sourcing cost</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-2 font-semibold text-slate-700">Estimated Selling Price</td>
+                  <td className="py-3.5 px-2 font-semibold text-slate-700">EST Selling Price</td>
                   <td className="py-3.5 px-2 text-slate-550">Target Indian retail price</td>
                   <td className="py-3.5 px-2 font-bold text-slate-900 text-right">₹{product.tentativeSellingPrice}</td>
                   <td className="py-3.5 px-2 text-slate-550 text-right">Retail price target</td>
@@ -963,11 +980,11 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                 </div>
 
                 <div>
-                  <h3 className="text-xs font-bold text-slate-850 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">Meta Ads Density</h3>
+                  <h3 className="text-xs font-bold text-slate-855 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">Meta Ads Density</h3>
                   <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100/60 p-2 rounded-xl flex items-center justify-between text-xs gap-4 shadow-sm">
                     <span className="text-purple-900 font-bold tracking-wide">Active Creatives in Meta Ads Library</span>
                     <a
-                      href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.simplifiedName || product.productName))}&search_type=keyword_unordered`}
+                      href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.primaryAdsKeywords || product.simplifiedName || product.productName))}&search_type=keyword_unordered`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-black text-purple-700 text-[0.7rem] bg-white px-3 py-1 rounded-md shadow-sm border border-purple-100 hover:border-purple-300 hover:text-purple-900 transition-all shrink-0 cursor-pointer"
