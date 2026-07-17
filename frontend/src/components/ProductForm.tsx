@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { type ProductInput, uploadImages, fetchAiCompetitorAnalysis } from '../utils/api';
-import { Upload, X, Plus, Package, Globe, ShieldAlert, BadgeInfo, FileText, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { Upload, X, Plus, Package, Globe, ShieldAlert, BadgeInfo, FileText, ArrowRight, Loader2, Sparkles, Calculator } from 'lucide-react';
 
 interface ProductFormProps {
   onSave: (product: ProductInput) => void;
@@ -8,7 +8,7 @@ interface ProductFormProps {
 }
 
 export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) => {
-  const [activeTab, setActiveTab] = useState<'basic' | 'competition' | 'logistics'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'competition' | 'logistics' | 'profit'>('basic');
   const [productName, setProductName] = useState('');
   const [simplifiedName, setSimplifiedName] = useState('');
   const [cost, setCost] = useState<number>(0);
@@ -17,6 +17,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
   const [rtoPercentage, setRtoPercentage] = useState<number>(15);
   const [upsellPotential, setUpsellPotential] = useState<'YES' | 'MEDIUM' | 'LOW'>('MEDIUM');
   const [lowerCac, setLowerCac] = useState<'YES' | 'MEDIUM' | 'LOW'>('MEDIUM');
+
+  // Profit Calculator State
+  const [cpaCpp, setCpaCpp] = useState<number>(0);
+  const [totalOrders, setTotalOrders] = useState<number>(0);
+  const [validOrderPercentage, setValidOrderPercentage] = useState<number>(100);
+  const [deliveryPercentage, setDeliveryPercentage] = useState<number>(100);
+  const [rtoPercentageVal, setRtoPercentageVal] = useState<number>(0);
+  const [rtoRate, setRtoRate] = useState<number>(0);
+  const [productCostWithShipping, setProductCostWithShipping] = useState<number>(0);
+  const [productSellingPrice, setProductSellingPrice] = useState<number>(0);
   
   // Market Sellers
   const [amazonSellers, setAmazonSellers] = useState<number | undefined>(undefined);
@@ -49,6 +59,26 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
     }
     return num >= 10 ? num / 1000 : num;
   };
+
+  React.useEffect(() => {
+    const parsedActualWeight = parseWeightToKg(weight);
+    const dimensionalWeight = (length * width * height) / 5000;
+    const volumetricWeight = Math.max(parsedActualWeight, dimensionalWeight);
+    const rate = shippingType === 'cosmetics' ? 1400 : 700;
+    const computedCost = Math.round(volumetricWeight * rate);
+    setShippingCost(computedCost);
+  }, [weight, length, width, height, shippingType]);
+  React.useEffect(() => {
+    setProductCostWithShipping(cost + shippingCost);
+  }, [cost, shippingCost]);
+
+  React.useEffect(() => {
+    setProductSellingPrice(tentativeSellingPrice);
+  }, [tentativeSellingPrice]);
+
+  const parsedActualWeight = parseWeightToKg(weight);
+  const dimensionalWeight = (length * width * height) / 5000;
+  const courierVolumetricWeight = Math.max(parsedActualWeight, dimensionalWeight);
 
   // Images state
   const [images, setImages] = useState<string[]>([]);
@@ -179,8 +209,15 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
     ];
     const nonWebsites = shopifyStores.filter(store => store.trim() !== '');
     const hasMarketplace = nonWebsites.some(store => {
-      const lower = store.toLowerCase();
-      return blacklistedDomains.some(domain => lower.includes(domain));
+      try {
+        const urlStr = store.trim().startsWith('http') ? store.trim() : `https://${store.trim()}`;
+        const urlObj = new URL(urlStr);
+        const hostname = urlObj.hostname.toLowerCase();
+        return blacklistedDomains.some(domain => hostname.includes(domain));
+      } catch {
+        const lower = store.toLowerCase();
+        return blacklistedDomains.some(domain => lower.includes(domain));
+      }
     });
 
     if (hasMarketplace) {
@@ -188,11 +225,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
       setActiveTab('competition');
       return;
     }
-
-    const parsedActualWeight = parseWeightToKg(weight);
-    const dimensionalWeight = (length * width * height) / 5000;
-    const courierVolumetricWeight = Math.max(parsedActualWeight, dimensionalWeight);
-    const calculatedCourierCost = courierVolumetricWeight * (shippingType === 'cosmetics' ? 1400 : 700);
 
     const payload: ProductInput = {
       productName,
@@ -213,15 +245,51 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
       logistics: {
         weight,
         dimensions: { length, width, height },
-        shippingCost: calculatedCourierCost,
+        shippingCost,
         shippingType
       },
       tentativeSellingPrice,
-      rtoPercentage
+      rtoPercentage,
+      profitCalculator: {
+        cpaCpp,
+        totalOrders,
+        initialFbCost,
+        validOrderPercentage,
+        validOrdersCount,
+        fbAdSpendPerOrder,
+        deliveryPercentage,
+        actualOrdersDelivered,
+        finalFbCost,
+        rtoPercentage: rtoPercentageVal,
+        actualRtoOrders,
+        rtoRate,
+        rtoCost,
+        productCostWithShipping,
+        finalProductCost,
+        productSellingPrice,
+        profitPerDelivery,
+        gmv,
+        netProfitAfterDelivery,
+        profitPercentageGmv
+      }
     };
 
     onSave(payload);
   };
+
+  // Derived calculations
+  const initialFbCost = cpaCpp * totalOrders;
+  const validOrdersCount = totalOrders * (validOrderPercentage / 100);
+  const fbAdSpendPerOrder = validOrdersCount > 0 ? initialFbCost / validOrdersCount : 0;
+  const actualOrdersDelivered = validOrdersCount * (deliveryPercentage / 100);
+  const finalFbCost = actualOrdersDelivered > 0 ? initialFbCost / actualOrdersDelivered : 0;
+  const actualRtoOrders = validOrdersCount * (rtoPercentageVal / 100);
+  const rtoCost = rtoRate * (validOrdersCount - actualOrdersDelivered);
+  const finalProductCost = finalFbCost + productCostWithShipping;
+  const profitPerDelivery = productSellingPrice - finalProductCost;
+  const gmv = productSellingPrice * actualOrdersDelivered;
+  const netProfitAfterDelivery = (profitPerDelivery * actualOrdersDelivered) - rtoCost;
+  const profitPercentageGmv = gmv > 0 ? (netProfitAfterDelivery / gmv) * 100 : 0;
 
   return (
     <form onSubmit={handleSubmit} className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 shadow-sm rounded-3xl overflow-hidden transition-all">
@@ -262,6 +330,18 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
         >
           <ShieldAlert className="w-4 h-4 text-brand-500" />
           Logistics & Sourcing
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('profit')}
+          className={`flex-1 flex items-center justify-center gap-2.5 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+            activeTab === 'profit'
+              ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-sm border border-slate-200/60 dark:border-zinc-700/50'
+              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50 dark:text-zinc-400 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Calculator className="w-4 h-4 text-brand-500" />
+          Profit Calculator
         </button>
       </div>
 
@@ -524,7 +604,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
           <div className="space-y-5">
             <div>
               <h4 className="text-xs font-bold text-slate-700 dark:text-zinc-300 border-b border-slate-100 dark:border-zinc-800/80 pb-2 mb-3.5">Package Dimensions & Weight</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Actual Package Weight (e.g. 500g or 1.2kg)</label>
                   <input
@@ -536,9 +616,20 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5">Courier Volumetric Weight (Calculated Max)</label>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Landed Shipping Category</label>
+                  <select
+                    value={shippingType}
+                    onChange={(e) => setShippingType(e.target.value as 'cosmetics' | 'non-cosmetics')}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100"
+                  >
+                    <option value="non-cosmetics">Non-Cosmetics Shipping Cost (₹700/kg)</option>
+                    <option value="cosmetics">Cosmetics Shipping Cost (₹1,400/kg)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Courier Volumetric Weight (Calculated)</label>
                   <div className="px-4 py-3 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 text-sm font-semibold text-slate-500 dark:text-zinc-400">
-                    {Math.max(parseWeightToKg(weight), (length * width * height) / 5000).toFixed(3)} kg
+                    {courierVolumetricWeight.toFixed(3)} kg
                   </div>
                 </div>
               </div>
@@ -587,24 +678,14 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
               <h4 className="text-xs font-bold text-slate-700 dark:text-zinc-300 border-b border-slate-100 dark:border-zinc-800/80 pb-2 mb-3.5">Logistics Freight & Return Projections</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5">Landed Shipping Category</label>
-                  <select
-                    value={shippingType}
-                    onChange={(e) => setShippingType(e.target.value as 'cosmetics' | 'non-cosmetics')}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-805 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100"
-                  >
-                    <option value="non-cosmetics">Non-Cosmetics (₹700 / kg)</option>
-                    <option value="cosmetics">Cosmetics (₹1,400 / kg)</option>
-                  </select>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5">Courier Cost (₹ Calculated)</label>
+                  <input
+                    type="number"
+                    readOnly
+                    value={shippingCost || 0}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-100 dark:bg-zinc-950/30 text-slate-650 dark:text-zinc-400 cursor-not-allowed focus:outline-none"
+                  />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5">Calculated Courier Cost (₹ per Unit)</label>
-                  <div className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-805 bg-slate-100 dark:bg-zinc-955 text-sm font-black text-slate-800 dark:text-zinc-200">
-                    ₹{(Math.max(parseWeightToKg(weight), (length * width * height) / 5000) * (shippingType === 'cosmetics' ? 1400 : 700)).toFixed(2)}
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-4">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5">Estimated RTO Return (%)</label>
                   <input
@@ -637,6 +718,202 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
           </div>
         )}
 
+        {activeTab === 'profit' && (
+          <div className="space-y-6">
+            <div>
+              <h4 className="text-xs font-bold text-slate-700 dark:text-zinc-300 border-b border-slate-100 dark:border-zinc-800/80 pb-2 mb-3.5">Profit Calculator & Unit Economics</h4>
+              <p className="text-[10px] text-slate-400 mt-1 mb-4">Model advertising spends, delivery performance, RTO rates, and overall GMV profitability.</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Inputs Column */}
+              <div className="bg-slate-50/50 dark:bg-zinc-950/20 p-5 rounded-2xl border border-slate-100 dark:border-zinc-800/80 space-y-4">
+                <h5 className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Manual Input Variables</h5>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">CPA / CPP (₹)</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={cpaCpp || ''} 
+                      onChange={(e) => setCpaCpp(Math.max(0, parseFloat(e.target.value) || 0))}
+                      placeholder="e.g. 150"
+                      className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:text-zinc-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Total Orders Received</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={totalOrders || ''} 
+                      onChange={(e) => setTotalOrders(Math.max(0, parseInt(e.target.value) || 0))}
+                      placeholder="e.g. 100"
+                      className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:text-zinc-200"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Valid Order %</label>
+                    <div className="relative">
+                      <input 
+                        type="number" 
+                        min="0"
+                        max="100"
+                        value={validOrderPercentage || ''} 
+                        onChange={(e) => setValidOrderPercentage(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
+                        placeholder="e.g. 90"
+                        className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl pl-3 pr-6 py-2 text-xs focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:text-zinc-200"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Delivery %</label>
+                    <div className="relative">
+                      <input 
+                        type="number" 
+                        min="0"
+                        max="100"
+                        value={deliveryPercentage || ''} 
+                        onChange={(e) => setDeliveryPercentage(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
+                        placeholder="e.g. 70"
+                        className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl pl-3 pr-6 py-2 text-xs focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:text-zinc-200"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">RTO %</label>
+                    <div className="relative">
+                      <input 
+                        type="number" 
+                        min="0"
+                        max="100"
+                        value={rtoPercentageVal || ''} 
+                        onChange={(e) => setRtoPercentageVal(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
+                        placeholder="e.g. 20"
+                        className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl pl-3 pr-6 py-2 text-xs focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:text-zinc-200"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">RTO Rate (₹)</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={rtoRate || ''} 
+                      onChange={(e) => setRtoRate(Math.max(0, parseFloat(e.target.value) || 0))}
+                      placeholder="e.g. 100"
+                      className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:text-zinc-200"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Prod Cost with Ship (₹)</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={productCostWithShipping || ''} 
+                      onChange={(e) => setProductCostWithShipping(Math.max(0, parseFloat(e.target.value) || 0))}
+                      className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:text-zinc-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">Product Selling Price (₹)</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={productSellingPrice || ''} 
+                      onChange={(e) => setProductSellingPrice(Math.max(0, parseFloat(e.target.value) || 0))}
+                      className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:text-zinc-200"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Calculations / Output Column */}
+              <div className="space-y-4">
+                {/* Hero metrics */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl flex flex-col justify-between">
+                    <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Net Profit after Delivery</span>
+                    <span className="text-xl font-black text-emerald-700 dark:text-emerald-400 mt-2">₹{netProfitAfterDelivery.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="bg-brand-500/10 border border-brand-500/20 p-4 rounded-2xl flex flex-col justify-between">
+                    <span className="text-[9px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-wider">Profit % (GMV)</span>
+                    <span className="text-xl font-black text-brand-700 dark:text-brand-400 mt-2">{profitPercentageGmv.toFixed(2)}%</span>
+                  </div>
+                </div>
+
+                {/* Sub calculations list */}
+                <div className="bg-white dark:bg-zinc-950 p-5 rounded-2xl border border-slate-100 dark:border-zinc-850 space-y-3 text-xs">
+                  <h5 className="text-[10px] font-black text-slate-400 dark:text-zinc-550 uppercase tracking-widest mb-3 pb-2 border-b border-slate-100 dark:border-zinc-850">Calculated Metrics Flow</h5>
+                  
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Initial FB Cost</span>
+                    <span className="font-bold text-slate-755 dark:text-zinc-305">₹{initialFbCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Number of Valid Orders</span>
+                    <span className="font-bold text-slate-755 dark:text-zinc-305">{validOrdersCount.toFixed(1)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">FB Ad Spend per Order</span>
+                    <span className="font-bold text-slate-755 dark:text-zinc-305">₹{fbAdSpendPerOrder.toFixed(2)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Actual Orders Delivered</span>
+                    <span className="font-bold text-slate-755 dark:text-zinc-305">{actualOrdersDelivered.toFixed(1)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Final FB Cost</span>
+                    <span className="font-bold text-slate-755 dark:text-zinc-305">₹{finalFbCost.toFixed(2)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Actual RTO Orders</span>
+                    <span className="font-bold text-slate-755 dark:text-zinc-305">{actualRtoOrders.toFixed(1)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">RTO Cost</span>
+                    <span className="font-bold text-rose-600 dark:text-rose-400">₹{rtoCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Final Product Cost</span>
+                    <span className="font-bold text-slate-755 dark:text-zinc-305">₹{finalProductCost.toFixed(2)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Profit per Delivery</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{profitPerDelivery.toFixed(2)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">GMV</span>
+                    <span className="font-bold text-slate-755 dark:text-zinc-305">₹{gmv.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* Footer Save Button */}
@@ -645,15 +922,26 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
           Please review the details in each tab before saving.
         </div>
         
-        {activeTab !== 'logistics' ? (
-          <button
-            type="button"
-            onClick={() => setActiveTab(activeTab === 'basic' ? 'competition' : 'logistics')}
-            className="flex items-center gap-1.5 px-5 py-2.5 bg-black hover:bg-zinc-900 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-950 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-          >
-            Next Section
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+        {activeTab !== 'profit' ? (
+          <div className="flex items-center gap-2">
+            {activeTab === 'logistics' && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('profit')}
+                className="flex items-center gap-1.5 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-805 dark:hover:bg-zinc-700 dark:text-zinc-200 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-zinc-700"
+              >
+                Profit Calculator
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'basic' ? 'competition' : activeTab === 'competition' ? 'logistics' : 'profit')}
+              className="flex items-center gap-1.5 px-5 py-2.5 bg-black hover:bg-zinc-900 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-950 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+            >
+              Next Section
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         ) : (
           <button
             type="submit"

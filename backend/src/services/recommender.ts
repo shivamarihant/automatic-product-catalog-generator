@@ -474,7 +474,7 @@ async function countMarketplaceSellersViaSerper(
   };
 
   console.log(`[Serper] Counting real marketplace sellers for: "${productName}" (Ads query: "${adsQueryName || productName}")`);
-  const adsQuery = adsQueryName || productName;
+  const adsQuery = (adsQueryName || productName).replace(/\s+/g, ' ').trim();
   const coreNoun = getCoreNoun(adsQuery);
   // Normalize web-search fallback (each organic hit = 1 listing; scale totalResults if present)
   const normalize = (data: { organic: number; total: number }, divisor: number, cap: number): number => {
@@ -493,7 +493,7 @@ async function countMarketplaceSellersViaSerper(
       const res = await fetch('https://google.serper.dev/shopping', {
         method: 'POST',
         headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: `${marketplaceQueryName} ${productName}`, gl: 'in', hl: 'en', num: 100 })
+        body: JSON.stringify({ q: `${marketplaceQueryName} ${adsQuery}`, gl: 'in', hl: 'en', num: 100 })
       });
       if (!res.ok) {
         console.error(`[Serper Shopping] ${marketplaceQueryName} HTTP error: ${res.status}`);
@@ -540,8 +540,8 @@ async function countMarketplaceSellersViaSerper(
     fetchMarketplaceShoppingCount('amazon', 'amazon.', async () => {
       // Dual-query fallback for Amazon web search
       const [p1, p2] = await Promise.all([
-        serperSearch(`amazon.in ${productName}`, `amazon.`, 30),
-        serperSearch(`amazon india ${productName}`, `amazon.`, 30)
+        serperSearch(`amazon.in ${adsQuery}`, `amazon.`, 30),
+        serperSearch(`amazon india ${adsQuery}`, `amazon.`, 30)
       ]);
       return {
         organic: Math.max(p1.organic, p2.organic),
@@ -550,13 +550,13 @@ async function countMarketplaceSellersViaSerper(
     }, 3),
 
     // Flipkart
-    fetchMarketplaceShoppingCount('flipkart', 'flipkart.com', () => serperSearch(`flipkart.com ${productName}`, `flipkart.com`, 30), 3),
+    fetchMarketplaceShoppingCount('flipkart', 'flipkart.com', () => serperSearch(`flipkart.com ${adsQuery}`, `flipkart.com`, 30), 3),
 
     // Meesho
-    fetchMarketplaceShoppingCount('meesho', 'meesho.com', () => serperSearch(`meesho.com ${productName}`, `meesho.com`, 30), 2),
+    fetchMarketplaceShoppingCount('meesho', 'meesho.com', () => serperSearch(`meesho.com ${adsQuery}`, `meesho.com`, 30), 2),
 
     // JioMart
-    fetchMarketplaceShoppingCount('jiomart', 'jiomart.com', () => serperSearch(`jiomart.com ${productName}`, `jiomart.com`, 30), 2),
+    fetchMarketplaceShoppingCount('jiomart', 'jiomart.com', () => serperSearch(`jiomart.com ${adsQuery}`, `jiomart.com`, 30), 2),
 
     // Ads base search
     serperSearch(`facebook.com/ads/library ${adsQuery}`, `facebook.com/ads/library`)
@@ -620,7 +620,8 @@ async function getPrimaryKeywordsFromTitle(productName: string): Promise<string>
   }
 
   try {
-    const prompt = `Analyze this product title: "${productName}".
+    const sanitizedName = productName.replace(/[—–-]/g, ' ').replace(/\s+/g, ' ').trim();
+    const prompt = `Analyze this product title: "${sanitizedName}".
 Extract the primary product keywords that would be most effective for searching related active ads in the Meta Ads Library.
 These should be the main descriptive search terms (usually 2-3 words) that describe the product itself, not brands or promotional adjectives.
 Example:
@@ -628,7 +629,7 @@ Input: "Perfect Winged Liner Made Easy! Double-Ended Eyeliner Stamp" -> Output: 
 Input: "Godzilla Ice Cube Mold – 3D Silicone Freezer Tray for Drinks" -> Output: "ice cube mold"
 Input: "Premium Wireless Bluetooth Earbuds with Noise Cancellation" -> Output: "wireless earbuds"
 
-Respond ONLY with the keywords, with no other text. Do not include markdown, explanations, or quotes.`;
+Respond ONLY with the keywords, with no other text. Do not include markdown, explanations, or quotes. Ensure all words in the output are separated by proper spaces.`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -644,7 +645,7 @@ Respond ONLY with the keywords, with no other text. Do not include markdown, exp
     const d = await response.json();
     const txt = d.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (txt) {
-      return txt;
+      return txt.replace(/\s+/g, ' ');
     }
     return runLocalCleanup(productName);
   } catch (err) {

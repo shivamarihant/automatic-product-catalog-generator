@@ -312,10 +312,10 @@ function App() {
                     <div
                       key={prod._id}
                       onClick={() => handleSelectProduct(prod)}
-                      className="group flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 rounded-[1.5rem] overflow-hidden cursor-pointer hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/50 transition-all duration-300"
+                      className="group flex flex-col bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800/80 hover:border-slate-350 dark:hover:border-zinc-700 rounded-3xl overflow-hidden cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative shadow-sm"
                     >
                       {/* Image Header with Score Overlay */}
-                      <div className="relative w-full pt-[75%] bg-slate-50 dark:bg-zinc-950 overflow-hidden border-b border-slate-100 dark:border-zinc-800">
+                      <div className="relative w-full pt-[75%] bg-slate-50 dark:bg-zinc-955 overflow-hidden border-b border-slate-100 dark:border-zinc-850">
                         <img 
                           src={getSecureUrl(prod.images[0])} 
                           alt="Product" 
@@ -327,82 +327,98 @@ function App() {
                           }}
                         />
                         {/* Score Badge floating on image */}
-                        {prod.calculations && (
-                          <div className="absolute top-3 right-3 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 z-10">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                            <span className="text-[10px] font-extrabold text-slate-700 dark:text-zinc-200 uppercase tracking-widest">
-                              Score: {prod.calculations.opportunityScore}
-                            </span>
-                          </div>
-                        )}
+                        {prod.calculations && (() => {
+                          const score = prod.calculations.opportunityScore;
+                          const isExcellent = score >= 70;
+                          const isModerate = score >= 50 && score < 70;
+                          const dotColor = isExcellent ? 'bg-emerald-500' : isModerate ? 'bg-blue-500' : 'bg-rose-500';
+                          return (
+                            <div className="absolute top-3 right-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1.5 z-10 border border-slate-100 dark:border-zinc-800">
+                              <span className={`w-1.5 h-1.5 rounded-full ${dotColor} animate-pulse`}></span>
+                              <span className="text-[10px] font-black text-slate-700 dark:text-zinc-300 tracking-wider">
+                                SCORE: {score}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       </div>
                       
                       {/* Card Content */}
-                      <div className="p-5 flex flex-col flex-1">
-                        <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-100 line-clamp-2 leading-snug mb-4 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                      <div className="p-4 flex flex-col flex-1">
+                        <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-zinc-100 line-clamp-2 leading-snug mb-3.5 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                           {prod.productName}
                         </h4>
                         
                         {/* Metrics Grid */}
-                        <div className="grid grid-cols-2 gap-3 mb-5 mt-auto">
-                          <div className="bg-slate-50 dark:bg-zinc-950/50 p-3 rounded-xl border border-slate-200 dark:border-zinc-800/80 flex flex-col justify-between">
-                            <div>
-                              <div className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Landed Cost</div>
-                              <div className="text-sm font-extrabold text-slate-700 dark:text-zinc-300">₹{prod.cost}</div>
-                            </div>
-                            <div className="text-[9px] font-bold text-slate-450 dark:text-zinc-500 mt-1 uppercase">MOQ: {prod.moq} pcs</div>
+                        <div className="grid grid-cols-2 gap-2 mb-3.5 mt-auto">
+                          <div className="bg-slate-50 dark:bg-zinc-955 p-3 rounded-2xl border border-slate-100 dark:border-zinc-850 flex flex-col justify-between">
+                            <span className="text-[8px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Landed Cost</span>
+                            <span className="text-sm font-black text-slate-750 dark:text-zinc-300 mt-1">₹{prod.cost}</span>
+                            <span className="text-[8px] text-slate-450 dark:text-zinc-500 font-bold mt-1">MOQ: {prod.moq} Pcs</span>
                           </div>
-                          <div className="bg-brand-50/50 dark:bg-brand-950/20 p-3 rounded-xl border border-brand-100/50 dark:border-brand-900/30">
-                            <div className="text-[9px] font-bold text-brand-500/80 dark:text-brand-400 uppercase tracking-wider mb-1">EST Selling Price</div>
-                            <div className="text-sm font-extrabold text-brand-700 dark:text-brand-400">₹{prod.tentativeSellingPrice || 0}</div>
+                          
+                          <div className="bg-brand-50/20 dark:bg-brand-955/10 p-3 rounded-2xl border border-brand-100/30 dark:border-brand-900/20 flex flex-col justify-between">
+                            <span className="text-[8px] font-black text-brand-500 uppercase tracking-widest">Est. Selling Price</span>
+                            <span className="text-sm font-black text-brand-700 dark:text-brand-400 mt-1">₹{prod.tentativeSellingPrice || 0}</span>
+                            <span className="text-[8px] text-brand-500/70 font-semibold mt-1">Target Price</span>
                           </div>
                         </div>
 
-                        {/* Badges Row */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          {prod.calculations && (
-                            <span className="px-2.5 py-1 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 rounded-lg text-[9px] font-bold uppercase tracking-wider">
-                              Margin: {prod.calculations.marginPercentage}% (₹{prod.calculations.margin})
-                            </span>
-                          )}
-                        </div>
                         {/* Sourcing Opportunity Score Spectrum Bar */}
-                        {prod.calculations && (
-                          <div className="mb-4">
-                            <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2.5">
-                              <span>Sourcing Opportunity</span>
+                        {prod.calculations && (() => {
+                          const score = prod.calculations.opportunityScore;
+                          const isExcellent = score >= 70;
+                          const isModerate = score >= 50 && score < 70;
+                          const statusColor = isExcellent 
+                            ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' 
+                            : isModerate 
+                            ? 'text-blue-600 dark:text-blue-400 bg-blue-500/10' 
+                            : 'text-rose-600 dark:text-rose-400 bg-rose-500/10';
+                          const statusText = isExcellent 
+                            ? 'Excellent Sourcing Node' 
+                            : isModerate 
+                            ? 'Moderate Launch Potential' 
+                            : 'High Sourcing Resistance';
+                          const dotColor = isExcellent ? 'bg-emerald-500' : isModerate ? 'bg-blue-500' : 'bg-rose-500';
+                          return (
+                            <div className="mb-1">
+                              <div className="flex justify-between items-center text-[8px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
+                                <span>Sourcing Index</span>
+                              </div>
+                              
+                              {/* Color Spectrum Gradient Bar */}
+                              <div className="h-1 w-full rounded-full bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-500 mb-2 relative">
+                                <div 
+                                  className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white dark:bg-zinc-800 border-2 border-slate-900 dark:border-zinc-100 rounded-full shadow"
+                                  style={{ left: `calc(${score}% - 5px)` }}
+                                />
+                              </div>
+
+                              {/* Dynamically Styled Suitability Badge */}
+                              <div className={`mt-2 py-1.5 px-2.5 rounded-xl border border-transparent text-[8.5px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 ${statusColor}`}>
+                                <span className={`w-1 h-1 rounded-full ${dotColor}`}></span>
+                                {statusText}
+                              </div>
                             </div>
-                            
-                            {/* Color Spectrum Gradient Bar */}
-                            <div className="h-1.5 w-full rounded-full bg-gradient-to-r from-red-500 via-yellow-400 to-emerald-500 mb-2.5 relative">
-                              {/* Slide marker indicator corresponding to the score location */}
-                              <div 
-                                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-zinc-800 border-2 border-slate-900 dark:border-zinc-100 rounded-full shadow-sm"
-                                style={{ left: `calc(${prod.calculations.opportunityScore}% - 6px)` }}
-                              />
-                            </div>
-                            
-                            {/* Spectrum Status Pill Labels */}
-                            <div className="flex items-center justify-between gap-1 text-[8px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mt-1 relative">
-                              {(() => {
-                                const score = prod.calculations.opportunityScore;
-                                const isLow = score < 50;
-                                const isMed = score >= 50 && score < 70;
-                                const isHigh = score >= 70 && score < 85;
-                                const isVeryHigh = score >= 85;
-                                return (
-                                  <>
-                                    <span className={`px-2 py-0.5 rounded-full transition-all ${isLow ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-black shadow-sm' : ''}`}>Low</span>
-                                    <span className={`px-2 py-0.5 rounded-full transition-all ${isMed ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-black shadow-sm' : ''}`}>Medium</span>
-                                    <span className={`px-2 py-0.5 rounded-full transition-all ${isHigh ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-black shadow-sm' : ''}`}>High</span>
-                                    <span className={`px-2 py-0.5 rounded-full transition-all ${isVeryHigh ? 'bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-black shadow-sm' : ''}`}>Very High</span>
-                                  </>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                       </div>
+
+                      {/* Card Footer glassmorphic bar */}
+                      {prod.calculations && (
+                        <div className="bg-slate-50/50 dark:bg-zinc-950/40 border-t border-slate-100 dark:border-zinc-850 px-4 py-2.5 flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                          <span className="flex items-center gap-1">
+                            <span className="text-[8px] font-bold text-slate-400 dark:text-zinc-500">Margin</span>
+                            <span className="text-slate-750 dark:text-zinc-300 font-extrabold">{prod.calculations.marginPercentage}%</span>
+                          </span>
+                          <span className="w-px h-3 bg-slate-200 dark:bg-zinc-800"></span>
+                          <span className="flex items-center gap-1">
+                            <span className="text-[8px] font-bold text-slate-400 dark:text-zinc-500">Profit/Unit</span>
+                            <span className="text-emerald-600 dark:text-emerald-450 font-extrabold">₹{prod.calculations.margin}</span>
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

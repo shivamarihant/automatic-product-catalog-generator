@@ -9,18 +9,14 @@ export const OpportunityMeter: React.FC<OpportunityMeterProps> = ({ score }) => 
   let statusText = 'High Sourcing Resistance';
   let strokeColor = 'stroke-red-500';
   
-  if (score >= 80) {
+  if (score >= 70) {
     statusColor = 'text-emerald-600 border-emerald-200 bg-emerald-50';
     statusText = 'Excellent Sourcing Node';
     strokeColor = 'stroke-emerald-500';
-  } else if (score >= 60) {
+  } else if (score >= 50) {
     statusColor = 'text-brand-600 border-brand-200 bg-brand-50';
-    statusText = 'Strong Launch Potential';
+    statusText = 'Moderate Launch Potential';
     strokeColor = 'stroke-brand-500';
-  } else if (score >= 45) {
-    statusColor = 'text-amber-600 border-amber-200 bg-amber-50';
-    statusText = 'Moderate Sourcing Risk';
-    strokeColor = 'stroke-amber-500';
   }
 
   const radius = 50;

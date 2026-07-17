@@ -6,6 +6,7 @@ export interface ProductInput {
   _id?: string;
   productName: string;
   simplifiedName?: string;
+  primaryAdsKeywords?: string;
   images: string[];
   cost: number;
   moq: number;
@@ -45,6 +46,28 @@ export interface ProductInput {
     opportunityScore: number;
   };
   aiRecommendation?: string;
+  profitCalculator?: {
+    cpaCpp: number;
+    totalOrders: number;
+    initialFbCost: number;
+    validOrderPercentage: number;
+    validOrdersCount: number;
+    fbAdSpendPerOrder: number;
+    deliveryPercentage: number;
+    actualOrdersDelivered: number;
+    finalFbCost: number;
+    rtoPercentage: number;
+    actualRtoOrders: number;
+    rtoRate: number;
+    rtoCost: number;
+    productCostWithShipping: number;
+    finalProductCost: number;
+    productSellingPrice: number;
+    profitPerDelivery: number;
+    gmv: number;
+    netProfitAfterDelivery: number;
+    profitPercentageGmv: number;
+  };
   createdAt?: string;
 }
 

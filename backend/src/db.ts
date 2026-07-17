@@ -46,6 +46,28 @@ export interface Product {
     opportunityScore: number;
   };
   aiRecommendation: string;
+  profitCalculator?: {
+    cpaCpp: number;
+    totalOrders: number;
+    initialFbCost: number;
+    validOrderPercentage: number;
+    validOrdersCount: number;
+    fbAdSpendPerOrder: number;
+    deliveryPercentage: number;
+    actualOrdersDelivered: number;
+    finalFbCost: number;
+    rtoPercentage: number;
+    actualRtoOrders: number;
+    rtoRate: number;
+    rtoCost: number;
+    productCostWithShipping: number;
+    finalProductCost: number;
+    productSellingPrice: number;
+    profitPerDelivery: number;
+    gmv: number;
+    netProfitAfterDelivery: number;
+    profitPercentageGmv: number;
+  };
   createdAt: Date;
 }
 
@@ -105,6 +127,28 @@ const ProductSchema = new mongoose.Schema({
     opportunityScore: { type: Number, default: 0 }
   },
   aiRecommendation: { type: String, default: '' },
+  profitCalculator: {
+    cpaCpp: { type: Number, default: 0 },
+    totalOrders: { type: Number, default: 0 },
+    initialFbCost: { type: Number, default: 0 },
+    validOrderPercentage: { type: Number, default: 0 },
+    validOrdersCount: { type: Number, default: 0 },
+    fbAdSpendPerOrder: { type: Number, default: 0 },
+    deliveryPercentage: { type: Number, default: 0 },
+    actualOrdersDelivered: { type: Number, default: 0 },
+    finalFbCost: { type: Number, default: 0 },
+    rtoPercentage: { type: Number, default: 0 },
+    actualRtoOrders: { type: Number, default: 0 },
+    rtoRate: { type: Number, default: 0 },
+    rtoCost: { type: Number, default: 0 },
+    productCostWithShipping: { type: Number, default: 0 },
+    finalProductCost: { type: Number, default: 0 },
+    productSellingPrice: { type: Number, default: 0 },
+    profitPerDelivery: { type: Number, default: 0 },
+    gmv: { type: Number, default: 0 },
+    netProfitAfterDelivery: { type: Number, default: 0 },
+    profitPercentageGmv: { type: Number, default: 0 }
+  },
   createdAt: { type: Date, default: Date.now }
 });
 

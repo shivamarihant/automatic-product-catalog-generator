@@ -40,7 +40,7 @@ const getCleanAdsQuery = (name: string): string => {
 };
 
 export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProduct, catalog }) => {
-  const product = {
+  const product: ProductInput = {
     ...rawProduct,
     calculations: catalog.calculations || rawProduct.calculations,
     fetchedData: catalog.fetchedData || rawProduct.fetchedData,
@@ -68,21 +68,14 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
     year: 'numeric'
   });
 
-  // Calculate pricing distribution metrics
-  const unitCost = product.cost || 0;
-  const unitShipping = product.logistics.shippingCost || 0;
-  const unitProfit = product.calculations?.netProfit || 0;
-  const sellingPrice = product.tentativeSellingPrice || (unitCost + unitShipping + unitProfit) || 1;
+  const [shippingType, setShippingType] = useState<'cosmetics' | 'non-cosmetics'>(
+    product.logistics.shippingType || 'non-cosmetics'
+  );
 
-  const costPercent = Math.min(100, Math.round((unitCost / sellingPrice) * 100));
-  const shippingPercent = Math.min(100, Math.round((unitShipping / sellingPrice) * 100));
-  const profitPercent = Math.max(0, 100 - costPercent - shippingPercent);
-
-  // Volumetric weight calculation
   const lengthCm = product.logistics.dimensions?.length || 0;
   const widthCm = product.logistics.dimensions?.width || 0;
   const heightCm = product.logistics.dimensions?.height || 0;
-  
+
   const parseWeightToKg = (weightStr: string): number => {
     if (!weightStr) return 0;
     const cleaned = weightStr.trim().toLowerCase();
@@ -99,7 +92,21 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
   const parsedActualWeight = parseWeightToKg(product.logistics.weight);
   const dimensionalWeight = (lengthCm * widthCm * heightCm) / 5000;
-  const courierVolumetricWeight = Math.max(parsedActualWeight, dimensionalWeight).toFixed(2);
+  const courierVolumetricWeight = Math.max(parsedActualWeight, dimensionalWeight);
+
+  const unitShipping = Math.round(courierVolumetricWeight * (shippingType === 'cosmetics' ? 1400 : 700));
+  const unitCost = product.cost || 0;
+  const unitProfit = parseFloat((product.tentativeSellingPrice - unitCost - unitShipping).toFixed(2));
+  const sellingPrice = product.tentativeSellingPrice || (unitCost + unitShipping + unitProfit) || 1;
+
+  const grossMargin = parseFloat((sellingPrice - unitCost).toFixed(2));
+  const grossMarginPercentage = sellingPrice > 0 ? parseFloat(((grossMargin / sellingPrice) * 100).toFixed(1)) : 0;
+
+  const costPercent = Math.min(100, Math.round((unitCost / sellingPrice) * 100));
+  const shippingPercent = Math.min(100, Math.round((unitShipping / sellingPrice) * 100));
+  const profitPercent = Math.max(0, 100 - costPercent - shippingPercent);
+
+  const volumetricWeightKg = courierVolumetricWeight.toFixed(2);
 
   const handleCopyAdvisory = () => {
     if (product.aiRecommendation) {
@@ -110,15 +117,12 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
   };
 
   const opportunityScore = product.calculations?.opportunityScore || 0;
-  let suitabilityText = 'Moderate Sourcing Risk';
-  let suitabilityBadgeColor = 'bg-amber-550/10 text-amber-600 border-amber-500/20 dark:text-amber-455';
-  if (opportunityScore >= 80) {
+  let suitabilityText = 'Moderate Launch Potential';
+  let suitabilityBadgeColor = 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400';
+  if (opportunityScore >= 70) {
     suitabilityText = 'Excellent Sourcing Node';
     suitabilityBadgeColor = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400';
-  } else if (opportunityScore >= 60) {
-    suitabilityText = 'Strong Launch Potential';
-    suitabilityBadgeColor = 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400';
-  } else if (opportunityScore < 45) {
+  } else if (opportunityScore < 50) {
     suitabilityText = 'High Sourcing Resistance';
     suitabilityBadgeColor = 'bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400';
   }
@@ -331,7 +335,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                     <span className="text-[9px] font-bold uppercase tracking-wider">Courier Vol. Wt.</span>
                   </div>
                   <span className="font-extrabold text-slate-800 dark:text-zinc-200 text-sm mt-1">
-                    {courierVolumetricWeight} <span className="text-[9px] text-slate-400 dark:text-zinc-550 font-semibold">kg</span>
+                    {volumetricWeightKg} <span className="text-[9px] text-slate-400 dark:text-zinc-550 font-semibold">kg</span>
                   </span>
                 </div>
 
@@ -345,6 +349,74 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                   </span>
                 </div>
               </div>
+              <div className="mt-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
+                <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-555 uppercase tracking-widest mb-1">Shipping Category</label>
+                <select
+                  value={shippingType}
+                  onChange={(e) => setShippingType(e.target.value as 'cosmetics' | 'non-cosmetics')}
+                  className="w-full px-2 py-1.5 text-[10px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-705 dark:text-zinc-300 font-semibold focus:outline-none"
+                >
+                  <option value="non-cosmetics">Non-Cosmetics Sourcing (₹700/kg)</option>
+                  <option value="cosmetics">Cosmetics Sourcing (₹1,400/kg)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Shopify Live Competitors Card */}
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 rounded-2xl p-4 shadow-sm space-y-3">
+              <h3 className="text-[10px] font-bold text-slate-400 dark:text-zinc-555 uppercase tracking-widest">
+                Shopify Live Competitors
+              </h3>
+
+              {product.shopifyStores.length > 0 ? (
+                <div className="space-y-1.5 max-h-[150px] overflow-y-auto custom-scrollbar">
+                  {product.shopifyStores.map((store, idx) => {
+                    const isNotFound = store.includes('No live competitor URLs found');
+                    return (
+                      <div key={idx} className="bg-slate-50 dark:bg-zinc-955/70 border border-slate-100/60 dark:border-zinc-900 px-3 py-2 rounded-xl text-xs flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 truncate">
+                          <Globe className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+                          <span className="font-semibold text-slate-700 dark:text-zinc-300 truncate">
+                            {store}
+                          </span>
+                        </div>
+                        {!isNotFound && (
+                          <a
+                            href={store.startsWith('http') ? store : `https://${store}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-brand-500 hover:text-brand-600 hover:underline p-1 cursor-pointer shrink-0"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic">No live competitor Shopify URLs logged.</p>
+              )}
+            </div>
+
+            {/* Amazon Best Seller Countries Card */}
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 rounded-2xl p-4 shadow-sm space-y-3">
+              <h3 className="text-[10px] font-bold text-slate-400 dark:text-zinc-555 uppercase tracking-widest">
+                Amazon Best Seller Countries
+              </h3>
+              
+              {product.fetchedData?.amazonBestSellerCountries && product.fetchedData.amazonBestSellerCountries.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {product.fetchedData.amazonBestSellerCountries.map((country, idx) => (
+                    <span key={idx} className="px-2.5 py-1.5 bg-slate-50 dark:bg-zinc-955 border border-slate-150 dark:border-zinc-850 text-slate-700 dark:text-zinc-300 rounded-xl flex items-center gap-1.5 shadow-sm" style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <MapPin className="w-3 h-3 text-brand-500 shrink-0" />
+                      {country}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic">No best seller countries listed.</p>
+              )}
             </div>
 
           </div>
@@ -443,9 +515,9 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                     <tr className="hover:bg-slate-50/50 dark:hover:bg-zinc-955/20 transition-all">
                       <td className="py-2.5 px-2 font-semibold">Gross Margin / Unit</td>
                       <td className="py-2.5 px-2 text-slate-400 dark:text-zinc-500 hidden md:table-cell">Total markup before logistics</td>
-                      <td className="py-2.5 px-2 font-bold text-slate-900 dark:text-zinc-100 text-right">₹{product.calculations?.margin}</td>
+                      <td className="py-2.5 px-2 font-bold text-slate-900 dark:text-zinc-100 text-right">₹{grossMargin}</td>
                       <td className="py-2.5 px-2 text-right font-black text-brand-500">
-                        {product.calculations?.marginPercentage}%
+                        {grossMarginPercentage}%
                       </td>
                     </tr>
                     <tr className="hover:bg-slate-50/50 dark:hover:bg-zinc-955/20 transition-all">
@@ -605,67 +677,105 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
             </div>
 
-            {/* Shopify Competitors & Amazon Best Seller Countries + AI Advisory */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              {/* Shopify stores list */}
-              <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 rounded-2xl p-5 shadow-sm space-y-3">
-                <h3 className="text-[10px] font-bold text-slate-400 dark:text-zinc-555 uppercase tracking-widest">
-                  Shopify Live Competitors
-                </h3>
 
-                {product.shopifyStores.length > 0 ? (
-                  <div className="space-y-1.5 max-h-[150px] overflow-y-auto custom-scrollbar">
-                    {product.shopifyStores.map((store, idx) => {
-                      const isNotFound = store.includes('No live competitor URLs found');
-                      return (
-                        <div key={idx} className="bg-slate-50 dark:bg-zinc-955/70 border border-slate-100/60 dark:border-zinc-900 px-3 py-2 rounded-xl text-xs flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2 truncate">
-                            <Globe className="w-3.5 h-3.5 text-brand-500 shrink-0" />
-                            <span className="font-semibold text-slate-700 dark:text-zinc-300 truncate">
-                              {store}
-                            </span>
-                          </div>
-                          {!isNotFound && (
-                            <a
-                              href={store.startsWith('http') ? store : `https://${store}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-brand-500 hover:text-brand-600 hover:underline p-1 cursor-pointer shrink-0"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-                          )}
-                        </div>
-                      );
-                    })}
+
+            {/* Unit Economics & Profit Calculator Card */}
+            {product.profitCalculator && product.profitCalculator.totalOrders > 0 && (
+              <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 rounded-2xl p-5 shadow-sm space-y-4">
+                <div>
+                  <h3 className="text-[10px] font-bold text-slate-405 dark:text-zinc-500 uppercase tracking-widest">
+                    Unit Economics & Profit Modeling
+                  </h3>
+                  <p className="text-[11px] font-semibold text-slate-450 dark:text-zinc-500 mt-0.5">
+                    Live advertising spends, delivery ratios, RTO impacts, and bottom-line margins
+                  </p>
+                </div>
+
+                {/* Hero metrics */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="bg-emerald-500/5 dark:bg-emerald-500/[0.02] border border-emerald-500/10 dark:border-emerald-500/20 p-3.5 rounded-xl">
+                    <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Net Profit after Delivery</span>
+                    <span className="text-base font-black text-emerald-700 dark:text-emerald-400 mt-1 block">
+                      ₹{product.profitCalculator.netProfitAfterDelivery.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </span>
                   </div>
-                ) : (
-                  <p className="text-xs text-slate-400 italic">No live competitor Shopify URLs logged.</p>
-                )}
-              </div>
-
-              {/* Best Seller Countries */}
-              <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 rounded-2xl p-5 shadow-sm space-y-3">
-                <h3 className="text-[10px] font-bold text-slate-400 dark:text-zinc-555 uppercase tracking-widest">
-                  Amazon Best Seller Countries
-                </h3>
-                
-                {product.fetchedData?.amazonBestSellerCountries && product.fetchedData.amazonBestSellerCountries.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {product.fetchedData.amazonBestSellerCountries.map((country, idx) => (
-                      <span key={idx} className="px-2.5 py-1.5 bg-slate-50 dark:bg-zinc-955 border border-slate-150 dark:border-zinc-850 text-slate-700 dark:text-zinc-300 rounded-xl flex items-center gap-1.5 shadow-sm" style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        <MapPin className="w-3 h-3 text-brand-500 shrink-0" />
-                        {country}
-                      </span>
-                    ))}
+                  <div className="bg-brand-500/5 dark:bg-brand-500/[0.02] border border-brand-500/10 dark:border-brand-500/20 p-3.5 rounded-xl">
+                    <span className="text-[8px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider block">Profit % of GMV</span>
+                    <span className="text-base font-black text-brand-700 dark:text-brand-400 mt-1 block">
+                      {product.profitCalculator.profitPercentageGmv.toFixed(2)}%
+                    </span>
                   </div>
-                ) : (
-                  <p className="text-xs text-slate-400 italic">No best seller countries listed.</p>
-                )}
-              </div>
+                  <div className="bg-slate-50 dark:bg-zinc-955 border border-slate-150 dark:border-zinc-850 p-3.5 rounded-xl">
+                    <span className="text-[8px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">Total GMV</span>
+                    <span className="text-base font-black text-slate-800 dark:text-zinc-200 mt-1 block">
+                      ₹{product.profitCalculator.gmv.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
 
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-zinc-850">
+                  {/* Left Column: Spends & Funnel */}
+                  <div className="space-y-2.5 pr-0 md:pr-4">
+                    <h4 className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest pb-1 border-b border-slate-50 dark:border-zinc-850/50">Funnel Spends</h4>
+                    
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 dark:text-zinc-400">Total Orders Received</span>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200">{product.profitCalculator.totalOrders}</span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 dark:text-zinc-400">CPA / CPP</span>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200">₹{product.profitCalculator.cpaCpp}</span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 dark:text-zinc-400">Initial FB Cost</span>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200">₹{product.profitCalculator.initialFbCost}</span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 dark:text-zinc-400">Valid Order %</span>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200">{product.profitCalculator.validOrderPercentage}%</span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 dark:text-zinc-400">Valid Orders</span>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200">{product.profitCalculator.validOrdersCount.toFixed(1)}</span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 dark:text-zinc-400">FB Ad Spend per Order</span>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200">₹{product.profitCalculator.fbAdSpendPerOrder.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Delivery & RTO */}
+                  <div className="space-y-2.5 pt-4 md:pt-0 pl-0 md:pl-4">
+                    <h4 className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest pb-1 border-b border-slate-50 dark:border-zinc-850/50">Delivery & Returns</h4>
+                    
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 dark:text-zinc-400">Delivery %</span>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200">{product.profitCalculator.deliveryPercentage}%</span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 dark:text-zinc-400">Actual Orders Delivered</span>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200">{product.profitCalculator.actualOrdersDelivered.toFixed(1)}</span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 dark:text-zinc-400">Final FB Cost</span>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200">₹{product.profitCalculator.finalFbCost.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 dark:text-zinc-400">RTO % / Rate</span>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200">{product.profitCalculator.rtoPercentage}% / ₹{product.profitCalculator.rtoRate}</span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 dark:text-zinc-400">RTO Cost</span>
+                      <span className="font-bold text-rose-600 dark:text-rose-400">₹{product.profitCalculator.rtoCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 dark:text-zinc-400">Final Product Cost</span>
+                      <span className="font-bold text-slate-800 dark:text-zinc-200">₹{product.profitCalculator.finalProductCost.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* AI Advisory - Full Width at bottom of right column */}
             {product.aiRecommendation && (
@@ -818,11 +928,11 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
               </div>
               <div className="bg-brand-50 border border-brand-100 p-4 rounded-xl flex flex-col items-start justify-center">
                 <span className="text-[9px] font-bold text-brand-600 uppercase tracking-widest mb-1.5">EST Selling Price</span>
-                <span className="text-2xl font-black text-brand-700">₹{product.tentativeSellingPrice}</span>
+                <span className="text-2xl font-black text-brand-700">₹{sellingPrice}</span>
               </div>
               <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex flex-col items-start justify-center">
                 <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1.5">Net Unit Profit</span>
-                <span className="text-2xl font-black text-emerald-700">₹{product.calculations?.netProfit}</span>
+                <span className="text-2xl font-black text-emerald-700">₹{unitProfit}</span>
               </div>
             </div>
 
@@ -852,19 +962,19 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                 <tr>
                   <td className="py-3.5 px-2 font-semibold text-slate-700">Gross Margin per Unit</td>
                   <td className="py-3.5 px-2 text-slate-500">Calculated Profit Delta</td>
-                  <td className="py-3.5 px-2 font-bold text-slate-900 text-right">₹{product.calculations?.margin}</td>
-                  <td className="py-3.5 px-2 font-extrabold text-brand-600 text-right">Margin: {product.calculations?.marginPercentage}%</td>
+                  <td className="py-3.5 px-2 font-bold text-slate-900 text-right">₹{grossMargin}</td>
+                  <td className="py-3.5 px-2 font-extrabold text-brand-600 text-right">Margin: {grossMarginPercentage}%</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-2 font-semibold text-slate-700">Logistics Shipping Cost</td>
                   <td className="py-3.5 px-2 text-slate-500">Landed courier rate</td>
-                  <td className="py-3.5 px-2 font-bold text-slate-900 text-right">₹{product.logistics.shippingCost}</td>
+                  <td className="py-3.5 px-2 font-bold text-slate-900 text-right">₹{unitShipping}</td>
                   <td className="py-3.5 px-2 text-slate-500 text-right">Courier delivery fee</td>
                 </tr>
                 <tr className="bg-emerald-50/30">
                   <td className="py-3.5 px-2 font-bold text-emerald-800">Net Sourcing Profit</td>
                   <td className="py-3.5 px-2 text-emerald-600/80">Final pocket margin</td>
-                  <td className="py-3.5 px-2 font-black text-emerald-600 text-right text-sm">₹{product.calculations?.netProfit}</td>
+                  <td className="py-3.5 px-2 font-black text-emerald-600 text-right text-sm">₹{unitProfit}</td>
                   <td className="py-3.5 px-2 font-semibold text-emerald-700 text-right">Profit after sourcing & logistics</td>
                 </tr>
                 <tr>
@@ -1056,7 +1166,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                 </div>
                 <div className="p-4 bg-brand-50/50 flex flex-col justify-center">
                   <span className="text-[9px] font-bold text-brand-600 uppercase tracking-widest mb-1.5">Shipping Fee</span>
-                  <span className="font-black text-brand-700 text-lg">₹{product.logistics.shippingCost} <span className="text-sm font-bold text-brand-500/80">/ Unit</span></span>
+                  <span className="font-black text-brand-700 text-lg">₹{unitShipping} <span className="text-sm font-bold text-brand-500/80">/ Unit</span></span>
                 </div>
               </div>
             </div>

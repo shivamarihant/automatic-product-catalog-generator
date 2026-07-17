@@ -725,18 +725,10 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
           </div>
         </div>
 
-        <div class="section-title" style="margin-top: 5mm;">Competitor Shopify Store Links</div>
-        ${shopifyHtml}
-
         <div class="section-title" style="margin-top: 5mm;">Meta Ads Density</div>
         <div class="competitor-card" style="border-left: 4px solid #6366f1; display: flex; justify-content: space-between; align-items: center; gap: 4mm;">
           <span class="competitor-name">Active Product Creatives (Meta Ads Library)</span>
           <a class="competitor-count" style="color: #6366f1; font-size: 13px; white-space: nowrap; flex-shrink: 0; text-decoration: none;" href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.primaryAdsKeywords || product.simplifiedName || product.productName))}&search_type=keyword_unordered" target="_blank">${product.adsCount} Ads Running ↗</a>
-        </div>
-
-        <div class="section-title" style="margin-top: 5mm;">Amazon Global Traction</div>
-        <div class="market-tags">
-          ${countriesHtml}
         </div>
       </div>
 
@@ -750,21 +742,17 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
             </div>
           </div>
           <div class="opportunity-status ${
-            product.calculations.opportunityScore >= 80
+            product.calculations.opportunityScore >= 70
               ? 'status-excellent'
-              : product.calculations.opportunityScore >= 60
+              : product.calculations.opportunityScore >= 50
               ? 'status-good'
-              : product.calculations.opportunityScore >= 45
-              ? 'status-moderate'
               : 'status-low'
           }">
             ${
-              product.calculations.opportunityScore >= 80
+              product.calculations.opportunityScore >= 70
                 ? 'Excellent Sourcing Node'
-                : product.calculations.opportunityScore >= 60
-                ? 'Strong Launch Potential'
-                : product.calculations.opportunityScore >= 45
-                ? 'Moderate Sourcing Risk'
+                : product.calculations.opportunityScore >= 50
+                ? 'Moderate Launch Potential'
                 : 'High Sourcing Resistance'
             }
           </div>
@@ -809,6 +797,70 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
         </tr>
       </tbody>
     </table>
+
+    <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 8mm; margin-bottom: 4mm; margin-top: 2mm;">
+      <div>
+        <div class="section-title" style="margin-top: 0; margin-bottom: 2mm;">Competitor Shopify Store Links</div>
+        ${shopifyHtml}
+      </div>
+      <div>
+        <div class="section-title" style="margin-top: 0; margin-bottom: 2mm;">Amazon Global Traction</div>
+        <div class="market-tags">
+          ${countriesHtml}
+        </div>
+      </div>
+    </div>
+
+    ${product.profitCalculator && product.profitCalculator.totalOrders > 0 ? `
+    <div style="margin-top: 6mm; margin-bottom: 6mm;">
+      <h3 style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #0f172a; padding-bottom: 1.5mm; margin-bottom: 3.5mm;">Unit Economics & Profit Model</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm; margin-bottom: 4mm;">
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 3mm; text-align: center;">
+          <span style="font-size: 8px; font-weight: 700; color: #166534; text-transform: uppercase; tracking-wider: 0.05em; display: block;">Net Profit after Delivery</span>
+          <span style="font-size: 14px; font-weight: 900; color: #15803d; margin-top: 1mm; display: block;">₹${product.profitCalculator.netProfitAfterDelivery.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+        </div>
+        <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 3mm; text-align: center;">
+          <span style="font-size: 8px; font-weight: 700; color: #1e40af; text-transform: uppercase; tracking-wider: 0.05em; display: block;">Profit % (GMV)</span>
+          <span style="font-size: 14px; font-weight: 900; color: #1d4ed8; margin-top: 1mm; display: block;">${product.profitCalculator.profitPercentageGmv.toFixed(2)}%</span>
+        </div>
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 3mm; text-align: center;">
+          <span style="font-size: 8px; font-weight: 700; color: #475569; text-transform: uppercase; tracking-wider: 0.05em; display: block;">Total GMV</span>
+          <span style="font-size: 14px; font-weight: 900; color: #334155; margin-top: 1mm; display: block;">₹${product.profitCalculator.gmv.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+        </div>
+      </div>
+      <table class="spec-table" style="margin-top: 0; font-size: 11px;">
+        <thead>
+          <tr>
+            <th>Total Spends & Funnel</th>
+            <th>Delivery & RTO Return Risk</th>
+            <th>Final Unit Sourcing & Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="vertical-align: top; text-align: left; padding: 3px 6px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 1.5mm;"><span>Total Orders:</span> <strong>${product.profitCalculator.totalOrders}</strong></div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 1.5mm;"><span>CPA/CPP:</span> <strong>₹${product.profitCalculator.cpaCpp}</strong></div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 1.5mm;"><span>Initial FB Cost:</span> <strong>₹${product.profitCalculator.initialFbCost}</strong></div>
+              <div style="display: flex; justify-content: space-between;"><span>FB spend/Order:</span> <strong>₹${product.profitCalculator.fbAdSpendPerOrder.toFixed(2)}</strong></div>
+            </td>
+            <td style="vertical-align: top; text-align: left; padding: 3px 6px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 1.5mm;"><span>Delivery %:</span> <strong>${product.profitCalculator.deliveryPercentage}%</strong></div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 1.5mm;"><span>Actual Delivered:</span> <strong>${product.profitCalculator.actualOrdersDelivered.toFixed(1)}</strong></div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 1.5mm;"><span>RTO %:</span> <strong>${product.profitCalculator.rtoPercentage}%</strong></div>
+              <div style="display: flex; justify-content: space-between;"><span>RTO Cost:</span> <strong style="color: #ef4444;">₹${product.profitCalculator.rtoCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></div>
+            </td>
+            <td style="vertical-align: top; text-align: left; padding: 3px 6px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 1.5mm;"><span>Final FB Cost:</span> <strong>₹${product.profitCalculator.finalFbCost.toFixed(2)}</strong></div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 1.5mm;"><span>Prod Cost + Ship:</span> <strong>₹${product.profitCalculator.productCostWithShipping}</strong></div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 1.5mm;"><span>Final Prod Cost:</span> <strong>₹${product.profitCalculator.finalProductCost.toFixed(2)}</strong></div>
+              <div style="display: flex; justify-content: space-between;"><span>Profit/Delivery:</span> <strong style="color: #22c55e;">₹${product.profitCalculator.profitPerDelivery.toFixed(2)}</strong></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    ` : ''}
 
     <div class="recommendation-box">
       <div class="recommendation-header">
