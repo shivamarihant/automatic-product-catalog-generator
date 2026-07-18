@@ -937,25 +937,14 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
         </div>
         
         {activeTab !== 'profit' ? (
-          <div className="flex items-center gap-2">
-            {activeTab === 'logistics' && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('profit')}
-                className="flex items-center gap-1.5 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-805 dark:hover:bg-zinc-700 dark:text-zinc-200 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-zinc-700"
-              >
-                Profit Calculator
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setActiveTab(activeTab === 'basic' ? 'competition' : activeTab === 'competition' ? 'logistics' : 'profit')}
-              className="flex items-center gap-1.5 px-5 py-2.5 bg-black hover:bg-zinc-900 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-950 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-            >
-              Next Section
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab(activeTab === 'basic' ? 'competition' : activeTab === 'competition' ? 'logistics' : 'profit')}
+            className="flex items-center gap-1.5 px-5 py-2.5 bg-black hover:bg-zinc-900 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-950 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+          >
+            Next Section
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         ) : (
           <button
             type="submit"
