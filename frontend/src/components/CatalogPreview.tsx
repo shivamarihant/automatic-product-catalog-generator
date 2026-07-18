@@ -71,6 +71,9 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
   const [shippingType, setShippingType] = useState<'cosmetics' | 'non-cosmetics'>(
     product.logistics.shippingType || 'non-cosmetics'
   );
+  const [shippingMode, setShippingMode] = useState<'air' | 'sea'>(
+    product.logistics.shippingMode || 'air'
+  );
 
   const lengthCm = product.logistics.dimensions?.length || 0;
   const widthCm = product.logistics.dimensions?.width || 0;
@@ -94,7 +97,8 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
   const dimensionalWeight = (lengthCm * widthCm * heightCm) / 5000;
   const courierVolumetricWeight = Math.max(parsedActualWeight, dimensionalWeight);
 
-  const unitShipping = Math.round(courierVolumetricWeight * (shippingType === 'cosmetics' ? 1400 : 700));
+  const airShipping = Math.round(courierVolumetricWeight * (shippingType === 'cosmetics' ? 1400 : 700));
+  const unitShipping = shippingMode === 'sea' ? Math.round(airShipping * 0.20) : airShipping;
   const unitCost = product.cost || 0;
   const unitProfit = parseFloat((product.tentativeSellingPrice - unitCost - unitShipping).toFixed(2));
   const sellingPrice = product.tentativeSellingPrice || (unitCost + unitShipping + unitProfit) || 1;
@@ -349,16 +353,29 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                   </span>
                 </div>
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
-                <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-555 uppercase tracking-widest mb-1">Shipping Category</label>
-                <select
-                  value={shippingType}
-                  onChange={(e) => setShippingType(e.target.value as 'cosmetics' | 'non-cosmetics')}
-                  className="w-full px-2 py-1.5 text-[10px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-705 dark:text-zinc-300 font-semibold focus:outline-none"
-                >
-                  <option value="non-cosmetics">Non-Cosmetics Sourcing (₹700/kg)</option>
-                  <option value="cosmetics">Cosmetics Sourcing (₹1,400/kg)</option>
-                </select>
+              <div className="mt-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80 grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-555 uppercase tracking-widest mb-1">Shipping Category</label>
+                  <select
+                    value={shippingType}
+                    onChange={(e) => setShippingType(e.target.value as 'cosmetics' | 'non-cosmetics')}
+                    className="w-full px-2 py-1.5 text-[10px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-705 dark:text-zinc-300 font-semibold focus:outline-none"
+                  >
+                    <option value="non-cosmetics">Non-Cosmetics (₹700/kg)</option>
+                    <option value="cosmetics">Cosmetics (₹1,400/kg)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-555 uppercase tracking-widest mb-1">Shipping Mode</label>
+                  <select
+                    value={shippingMode}
+                    onChange={(e) => setShippingMode(e.target.value as 'air' | 'sea')}
+                    className="w-full px-2 py-1.5 text-[10px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-705 dark:text-zinc-300 font-semibold focus:outline-none"
+                  >
+                    <option value="air">By Air (15 days)</option>
+                    <option value="sea">By Sea (45 days enquiry now)</option>
+                  </select>
+                </div>
               </div>
             </div>
 

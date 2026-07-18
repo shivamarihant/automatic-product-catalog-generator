@@ -28,6 +28,7 @@ export interface Product {
     };
     shippingCost: number;
     shippingType?: 'cosmetics' | 'non-cosmetics';
+    shippingMode?: 'air' | 'sea';
   };
   tentativeSellingPrice: number;
   rtoPercentage: number;
@@ -108,7 +109,8 @@ const ProductSchema = new mongoose.Schema({
       height: { type: Number, required: true }
     },
     shippingCost: { type: Number, required: true },
-    shippingType: { type: String, enum: ['cosmetics', 'non-cosmetics'], default: 'non-cosmetics' }
+    shippingType: { type: String, enum: ['cosmetics', 'non-cosmetics'], default: 'non-cosmetics' },
+    shippingMode: { type: String, enum: ['air', 'sea'], default: 'air' }
   },
   tentativeSellingPrice: { type: Number, required: true },
   rtoPercentage: { type: Number, required: true },

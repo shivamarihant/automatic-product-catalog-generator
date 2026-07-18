@@ -27,6 +27,7 @@ export interface ProductInput {
     };
     shippingCost: number;
     shippingType?: 'cosmetics' | 'non-cosmetics';
+    shippingMode?: 'air' | 'sea';
   };
   tentativeSellingPrice: number;
   rtoPercentage: number;

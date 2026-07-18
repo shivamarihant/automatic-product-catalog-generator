@@ -45,6 +45,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
   const [height, setHeight] = useState<number>(10);
   const [shippingCost, setShippingCost] = useState<number>(50);
   const [shippingType, setShippingType] = useState<'cosmetics' | 'non-cosmetics'>('non-cosmetics');
+  const [shippingMode, setShippingMode] = useState<'air' | 'sea'>('air');
 
   const parseWeightToKg = (weightStr: string): number => {
     if (!weightStr) return 0;
@@ -65,9 +66,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
     const dimensionalWeight = (length * width * height) / 5000;
     const volumetricWeight = Math.max(parsedActualWeight, dimensionalWeight);
     const rate = shippingType === 'cosmetics' ? 1400 : 700;
-    const computedCost = Math.round(volumetricWeight * rate);
+    const airCost = Math.round(volumetricWeight * rate);
+    const computedCost = shippingMode === 'sea' ? Math.round(airCost * 0.20) : airCost;
     setShippingCost(computedCost);
-  }, [weight, length, width, height, shippingType]);
+  }, [weight, length, width, height, shippingType, shippingMode]);
   React.useEffect(() => {
     setProductCostWithShipping(cost + shippingCost);
   }, [cost, shippingCost]);
@@ -246,7 +248,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
         weight,
         dimensions: { length, width, height },
         shippingCost,
-        shippingType
+        shippingType,
+        shippingMode
       },
       tentativeSellingPrice,
       rtoPercentage,
@@ -676,18 +679,29 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
 
             <div>
               <h4 className="text-xs font-bold text-slate-700 dark:text-zinc-300 border-b border-slate-100 dark:border-zinc-800/80 pb-2 mb-3.5">Logistics Freight & Return Projections</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5">Courier Cost (₹ Calculated)</label>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-555 uppercase tracking-widest mb-1.5">Shipping Mode</label>
+                  <select
+                    value={shippingMode}
+                    onChange={(e) => setShippingMode(e.target.value as 'air' | 'sea')}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100"
+                  >
+                    <option value="air">By Air (15 days)</option>
+                    <option value="sea">By Sea (45 days enquiry now)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-555 uppercase tracking-widest mb-1.5">Courier Cost (₹ Calculated)</label>
                   <input
                     type="number"
                     readOnly
                     value={shippingCost || 0}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-100 dark:bg-zinc-950/30 text-slate-650 dark:text-zinc-400 cursor-not-allowed focus:outline-none"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-100 dark:bg-zinc-955/30 text-slate-650 dark:text-zinc-400 cursor-not-allowed focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5">Estimated RTO Return (%)</label>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-555 uppercase tracking-widest mb-1.5">Estimated RTO Return (%)</label>
                   <input
                     type="number"
                     min="0"
@@ -695,7 +709,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
                     value={rtoPercentage || ''}
                     onChange={(e) => setRtoPercentage(Number(e.target.value))}
                     placeholder="e.g. 18"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100 placeholder:text-slate-400"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-955/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100 placeholder:text-slate-400"
                   />
                 </div>
               </div>

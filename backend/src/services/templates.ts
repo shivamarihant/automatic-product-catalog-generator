@@ -641,8 +641,8 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
           <td>Margin Ratio: <strong>${product.calculations.marginPercentage}%</strong></td>
         </tr>
         <tr>
-          <td>Logistics Shipping Cost</td>
-          <td>Landed courier rate</td>
+          <td>Logistics Shipping Cost (${product.logistics.shippingMode === 'sea' ? 'By Sea' : 'By Air'})</td>
+          <td>Landed courier rate (${product.logistics.shippingMode === 'sea' ? '45 days' : '15 days'})</td>
           <td>₹${product.logistics.shippingCost}</td>
           <td>Local delivery charge</td>
         </tr>
@@ -786,6 +786,7 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
           <th>Courier Vol. Wt.</th>
           <th>Dimensions (L x W x H)</th>
           <th>MOQ Requirement</th>
+          <th>Shipping Mode</th>
         </tr>
       </thead>
       <tbody>
@@ -794,6 +795,7 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
           <td>${courierVolumetricWeight} kg</td>
           <td>${product.logistics.dimensions.length} x ${product.logistics.dimensions.width} x ${product.logistics.dimensions.height} cm</td>
           <td>${product.moq} Units Minimum</td>
+          <td>${product.logistics.shippingMode === 'sea' ? 'By Sea (45 days)' : 'By Air (15 days)'}</td>
         </tr>
       </tbody>
     </table>
