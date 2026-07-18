@@ -937,14 +937,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
         </div>
         
         {activeTab !== 'profit' ? (
-          <button
-            type="button"
-            onClick={() => setActiveTab(activeTab === 'basic' ? 'competition' : activeTab === 'competition' ? 'logistics' : 'profit')}
-            className="flex items-center gap-1.5 px-5 py-2.5 bg-black hover:bg-zinc-900 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-950 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-          >
-            Next Section
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'basic' ? 'competition' : activeTab === 'competition' ? 'logistics' : 'profit')}
+              className="flex items-center gap-1.5 px-5 py-2.5 bg-black hover:bg-zinc-900 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-950 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+            >
+              Next Section
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         ) : (
           <button
             type="submit"
