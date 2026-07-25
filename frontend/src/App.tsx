@@ -5,7 +5,8 @@ import {
   fetchProducts, 
   createProduct, 
   generateCatalog, 
-  fetchProductCatalogs
+  fetchProductCatalogs,
+  fetchCatalog
 } from './utils/api';
 import { ProductForm } from './components/ProductForm';
 import { CatalogPreview } from './components/CatalogPreview';
@@ -74,9 +75,37 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const [sharedCatalogLoading, setSharedCatalogLoading] = useState(false);
+
+  const loadSharedCatalog = async (catalogId: string) => {
+    setSharedCatalogLoading(true);
+    setErrorMsg('');
+    try {
+      const { catalog, product } = await fetchCatalog(catalogId);
+      setSelectedProduct(product);
+      setActiveCatalog(catalog);
+      try {
+        const history = await fetchProductCatalogs(product._id || '');
+        setProductCatalogs(history);
+      } catch (err) {
+        setProductCatalogs([catalog]);
+      }
+    } catch (err) {
+      console.error('Error loading shared catalog:', err);
+      setErrorMsg('Shared catalog not found or failed to load.');
+    } finally {
+      setSharedCatalogLoading(false);
+    }
+  };
+
   // Initial load
   useEffect(() => {
     loadProducts();
+    const params = new URLSearchParams(window.location.search);
+    const catalogId = params.get('catalogId');
+    if (catalogId) {
+      loadSharedCatalog(catalogId);
+    }
   }, []);
 
   const loadProducts = async () => {
@@ -91,6 +120,9 @@ function App() {
   };
 
   const handleSelectProduct = async (prod: ProductInput) => {
+    if (window.location.search.includes('catalogId')) {
+      window.history.pushState({}, '', window.location.origin + window.location.pathname);
+    }
     setSelectedProduct(prod);
     setActiveCatalog(null);
     setProductCatalogs([]);
@@ -516,7 +548,7 @@ function App() {
           {/* 3. Catalog Preview Screen */}
           {selectedProduct && !showAddProduct && !isGeneratingCatalog && (
             <div className="space-y-6 print:space-y-0">
-              {isLoadingCatalogs ? (
+              {isLoadingCatalogs || sharedCatalogLoading ? (
                 <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 shadow-sm p-12 rounded-[2rem] flex flex-col justify-center items-center gap-4 text-center min-h-[350px]">
                   <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
                   <p className="text-xs text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">Loading Sourcing Catalog...</p>

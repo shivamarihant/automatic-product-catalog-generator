@@ -15,7 +15,8 @@ import {
   Ruler, 
   Gauge, 
   Check,
-  Copy
+  Copy,
+  Share2
 } from 'lucide-react';
 
 interface CatalogPreviewProps {
@@ -112,6 +113,60 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
   const volumetricWeightKg = courierVolumetricWeight.toFixed(2);
 
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShareCatalog = () => {
+    const shareUrl = `${window.location.origin}${window.location.pathname}?catalogId=${catalog._id}`;
+    navigator.clipboard.writeText(shareUrl);
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
+  };
+
+  // Local interactive Profit Calculator states
+  const [cpaCpp, setCpaCpp] = useState<number>(product.profitCalculator?.cpaCpp ?? 150);
+  const [totalOrders, setTotalOrders] = useState<number>(product.profitCalculator?.totalOrders ?? 100);
+  const [validOrderPercentage, setValidOrderPercentage] = useState<number>(product.profitCalculator?.validOrderPercentage ?? 90);
+  const [deliveryPercentage, setDeliveryPercentage] = useState<number>(product.profitCalculator?.deliveryPercentage ?? 70);
+  const [rtoPercentageVal, setRtoPercentageVal] = useState<number>(product.profitCalculator?.rtoPercentage ?? 20);
+  const [rtoRate, setRtoRate] = useState<number>(product.profitCalculator?.rtoRate ?? 100);
+  const [productCostWithShipping, setProductCostWithShipping] = useState<number>(
+    product.profitCalculator?.productCostWithShipping ?? (product.cost + unitShipping)
+  );
+  const [productSellingPrice, setProductSellingPrice] = useState<number>(
+    product.profitCalculator?.productSellingPrice ?? product.tentativeSellingPrice
+  );
+
+  React.useEffect(() => {
+    setCpaCpp(product.profitCalculator?.cpaCpp ?? 150);
+    setTotalOrders(product.profitCalculator?.totalOrders ?? 100);
+    setValidOrderPercentage(product.profitCalculator?.validOrderPercentage ?? 90);
+    setDeliveryPercentage(product.profitCalculator?.deliveryPercentage ?? 70);
+    setRtoPercentageVal(product.profitCalculator?.rtoPercentage ?? 20);
+    setRtoRate(product.profitCalculator?.rtoRate ?? 100);
+  }, [product.profitCalculator]);
+
+  React.useEffect(() => {
+    setProductCostWithShipping(product.cost + unitShipping);
+  }, [product.cost, unitShipping]);
+
+  React.useEffect(() => {
+    setProductSellingPrice(product.tentativeSellingPrice);
+  }, [product.tentativeSellingPrice]);
+
+  // Derived calculations
+  const initialFbCost = cpaCpp * totalOrders;
+  const validOrdersCount = totalOrders * (validOrderPercentage / 100);
+  const fbAdSpendPerOrder = validOrdersCount > 0 ? initialFbCost / validOrdersCount : 0;
+  const actualOrdersDelivered = validOrdersCount * (deliveryPercentage / 100);
+  const finalFbCost = actualOrdersDelivered > 0 ? initialFbCost / actualOrdersDelivered : 0;
+  const actualRtoOrders = validOrdersCount * (rtoPercentageVal / 100);
+  const rtoCost = rtoRate * (validOrdersCount - actualOrdersDelivered);
+  const finalProductCost = finalFbCost + productCostWithShipping;
+  const profitPerDelivery = productSellingPrice - finalProductCost;
+  const gmv = productSellingPrice * actualOrdersDelivered;
+  const netProfitAfterDelivery = (profitPerDelivery * actualOrdersDelivered) - rtoCost;
+  const profitPercentageGmv = gmv > 0 ? (netProfitAfterDelivery / gmv) * 100 : 0;
+
   const handleCopyAdvisory = () => {
     if (product.aiRecommendation) {
       navigator.clipboard.writeText(product.aiRecommendation);
@@ -146,7 +201,24 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
           </h2>
         </div>
 
-        {/* Removed Print Preview and Print options as requested */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleShareCatalog}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 text-[10px] font-extrabold uppercase tracking-wider rounded-xl transition-all cursor-pointer border border-slate-200/50 dark:border-zinc-750 shadow-sm"
+          >
+            {shareCopied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5 text-brand-500" />
+                Share Link
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* -------------------- 1. INTERACTIVE DASHBOARD VIEW -------------------- */}
@@ -697,102 +769,164 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
 
             {/* Unit Economics & Profit Calculator Card */}
-            {product.profitCalculator && product.profitCalculator.totalOrders > 0 && (
-              <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 rounded-2xl p-5 shadow-sm space-y-4">
-                <div>
-                  <h3 className="text-[10px] font-bold text-slate-405 dark:text-zinc-500 uppercase tracking-widest">
-                    Unit Economics & Profit Modeling
-                  </h3>
-                  <p className="text-[11px] font-semibold text-slate-450 dark:text-zinc-500 mt-0.5">
-                    Live advertising spends, delivery ratios, RTO impacts, and bottom-line margins
-                  </p>
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 rounded-2xl p-5 shadow-sm space-y-4">
+              <div>
+                <h3 className="text-[10px] font-bold text-slate-405 dark:text-zinc-500 uppercase tracking-widest">
+                  Unit Economics & Profit Modeling
+                </h3>
+                <p className="text-[11px] font-semibold text-slate-450 dark:text-zinc-500 mt-0.5">
+                  Live advertising spends, delivery ratios, RTO impacts, and bottom-line margins
+                </p>
+              </div>
+
+              {/* Hero metrics */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-emerald-500/5 dark:bg-emerald-500/[0.02] border border-emerald-500/10 dark:border-emerald-500/20 p-3.5 rounded-xl">
+                  <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Net Profit after Delivery</span>
+                  <span className="text-base font-black text-emerald-700 dark:text-emerald-400 mt-1 block">
+                    ₹{netProfitAfterDelivery.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="bg-brand-500/5 dark:bg-brand-500/[0.02] border border-brand-500/10 dark:border-brand-500/20 p-3.5 rounded-xl">
+                  <span className="text-[8px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider block">Profit % of GMV</span>
+                  <span className="text-base font-black text-brand-700 dark:text-brand-400 mt-1 block">
+                    {profitPercentageGmv.toFixed(2)}%
+                  </span>
+                </div>
+                <div className="bg-slate-50 dark:bg-zinc-955 border border-slate-150 dark:border-zinc-850 p-3.5 rounded-xl">
+                  <span className="text-[8px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">Total GMV</span>
+                  <span className="text-base font-black text-slate-800 dark:text-zinc-200 mt-1 block">
+                    ₹{gmv.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-zinc-850">
+                {/* Left Column: Calculator Inputs */}
+                <div className="space-y-3 pr-0 md:pr-4">
+                  <h4 className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest pb-1 border-b border-slate-50 dark:border-zinc-850/50">Calculator Inputs</h4>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-500 mb-1">Total Orders</label>
+                      <input
+                        type="number"
+                        value={totalOrders}
+                        onChange={(e) => setTotalOrders(Math.max(0, Number(e.target.value)))}
+                        className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-500 mb-1">CPA / CPP (₹)</label>
+                      <input
+                        type="number"
+                        value={cpaCpp}
+                        onChange={(e) => setCpaCpp(Math.max(0, Number(e.target.value)))}
+                        className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-500 mb-1">Valid Order %</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={validOrderPercentage}
+                        onChange={(e) => setValidOrderPercentage(Math.max(0, Math.min(100, Number(e.target.value))))}
+                        className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-500 mb-1">Delivery %</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={deliveryPercentage}
+                        onChange={(e) => setDeliveryPercentage(Math.max(0, Math.min(100, Number(e.target.value))))}
+                        className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-500 mb-1">RTO %</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={rtoPercentageVal}
+                        onChange={(e) => setRtoPercentageVal(Math.max(0, Math.min(100, Number(e.target.value))))}
+                        className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-500 mb-1">RTO Rate (₹)</label>
+                      <input
+                        type="number"
+                        value={rtoRate}
+                        onChange={(e) => setRtoRate(Math.max(0, Number(e.target.value)))}
+                        className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-500 mb-1">Landed Cost + Ship (₹)</label>
+                      <input
+                        type="number"
+                        value={productCostWithShipping}
+                        onChange={(e) => setProductCostWithShipping(Math.max(0, Number(e.target.value)))}
+                        className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-500 mb-1">Selling Price (₹)</label>
+                      <input
+                        type="number"
+                        value={productSellingPrice}
+                        onChange={(e) => setProductSellingPrice(Math.max(0, Number(e.target.value)))}
+                        className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Hero metrics */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="bg-emerald-500/5 dark:bg-emerald-500/[0.02] border border-emerald-500/10 dark:border-emerald-500/20 p-3.5 rounded-xl">
-                    <span className="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Net Profit after Delivery</span>
-                    <span className="text-base font-black text-emerald-700 dark:text-emerald-400 mt-1 block">
-                      ₹{product.profitCalculator.netProfitAfterDelivery.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                    </span>
+                {/* Right Column: Calculated Flows */}
+                <div className="space-y-2.5 pt-4 md:pt-0 pl-0 md:pl-4">
+                  <h4 className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest pb-1 border-b border-slate-50 dark:border-zinc-850/50">Calculated Metrics</h4>
+                  
+                  <div className="flex justify-between py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Initial FB Cost</span>
+                    <span className="font-bold text-slate-800 dark:text-zinc-200">₹{initialFbCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                   </div>
-                  <div className="bg-brand-500/5 dark:bg-brand-500/[0.02] border border-brand-500/10 dark:border-brand-500/20 p-3.5 rounded-xl">
-                    <span className="text-[8px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider block">Profit % of GMV</span>
-                    <span className="text-base font-black text-brand-700 dark:text-brand-400 mt-1 block">
-                      {product.profitCalculator.profitPercentageGmv.toFixed(2)}%
-                    </span>
+                  <div className="flex justify-between py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Valid Orders</span>
+                    <span className="font-bold text-slate-800 dark:text-zinc-200">{validOrdersCount.toFixed(1)}</span>
                   </div>
-                  <div className="bg-slate-50 dark:bg-zinc-955 border border-slate-150 dark:border-zinc-850 p-3.5 rounded-xl">
-                    <span className="text-[8px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider block">Total GMV</span>
-                    <span className="text-base font-black text-slate-800 dark:text-zinc-200 mt-1 block">
-                      ₹{product.profitCalculator.gmv.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                    </span>
+                  <div className="flex justify-between py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">FB Ad Spend / Order</span>
+                    <span className="font-bold text-slate-800 dark:text-zinc-200">₹{fbAdSpendPerOrder.toFixed(2)}</span>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-zinc-850">
-                  {/* Left Column: Spends & Funnel */}
-                  <div className="space-y-2.5 pr-0 md:pr-4">
-                    <h4 className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest pb-1 border-b border-slate-50 dark:border-zinc-850/50">Funnel Spends</h4>
-                    
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-500 dark:text-zinc-400">Total Orders Received</span>
-                      <span className="font-bold text-slate-800 dark:text-zinc-200">{product.profitCalculator.totalOrders}</span>
-                    </div>
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-500 dark:text-zinc-400">CPA / CPP</span>
-                      <span className="font-bold text-slate-800 dark:text-zinc-200">₹{product.profitCalculator.cpaCpp}</span>
-                    </div>
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-500 dark:text-zinc-400">Initial FB Cost</span>
-                      <span className="font-bold text-slate-800 dark:text-zinc-200">₹{product.profitCalculator.initialFbCost}</span>
-                    </div>
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-500 dark:text-zinc-400">Valid Order %</span>
-                      <span className="font-bold text-slate-800 dark:text-zinc-200">{product.profitCalculator.validOrderPercentage}%</span>
-                    </div>
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-500 dark:text-zinc-400">Valid Orders</span>
-                      <span className="font-bold text-slate-800 dark:text-zinc-200">{product.profitCalculator.validOrdersCount.toFixed(1)}</span>
-                    </div>
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-500 dark:text-zinc-400">FB Ad Spend per Order</span>
-                      <span className="font-bold text-slate-800 dark:text-zinc-200">₹{product.profitCalculator.fbAdSpendPerOrder.toFixed(2)}</span>
-                    </div>
+                  <div className="flex justify-between py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Actual Delivered</span>
+                    <span className="font-bold text-slate-800 dark:text-zinc-200">{actualOrdersDelivered.toFixed(1)}</span>
                   </div>
-
-                  {/* Right Column: Delivery & RTO */}
-                  <div className="space-y-2.5 pt-4 md:pt-0 pl-0 md:pl-4">
-                    <h4 className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest pb-1 border-b border-slate-50 dark:border-zinc-850/50">Delivery & Returns</h4>
-                    
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-500 dark:text-zinc-400">Delivery %</span>
-                      <span className="font-bold text-slate-800 dark:text-zinc-200">{product.profitCalculator.deliveryPercentage}%</span>
-                    </div>
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-500 dark:text-zinc-400">Actual Orders Delivered</span>
-                      <span className="font-bold text-slate-800 dark:text-zinc-200">{product.profitCalculator.actualOrdersDelivered.toFixed(1)}</span>
-                    </div>
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-500 dark:text-zinc-400">Final FB Cost</span>
-                      <span className="font-bold text-slate-800 dark:text-zinc-200">₹{product.profitCalculator.finalFbCost.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-500 dark:text-zinc-400">RTO % / Rate</span>
-                      <span className="font-bold text-slate-800 dark:text-zinc-200">{product.profitCalculator.rtoPercentage}% / ₹{product.profitCalculator.rtoRate}</span>
-                    </div>
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-500 dark:text-zinc-400">RTO Cost</span>
-                      <span className="font-bold text-rose-600 dark:text-rose-400">₹{product.profitCalculator.rtoCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                    </div>
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-500 dark:text-zinc-400">Final Product Cost</span>
-                      <span className="font-bold text-slate-800 dark:text-zinc-200">₹{product.profitCalculator.finalProductCost.toFixed(2)}</span>
-                    </div>
+                  <div className="flex justify-between py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Final FB Cost / Order</span>
+                    <span className="font-bold text-slate-800 dark:text-zinc-200">₹{finalFbCost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Actual RTO Orders</span>
+                    <span className="font-bold text-slate-800 dark:text-zinc-200">{actualRtoOrders.toFixed(1)}</span>
+                  </div>
+                  <div className="flex justify-between py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">RTO Cost</span>
+                    <span className="font-bold text-rose-600 dark:text-rose-400">₹{rtoCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between py-0.5">
+                    <span className="text-slate-500 dark:text-zinc-400">Final Product Cost</span>
+                    <span className="font-bold text-slate-800 dark:text-zinc-200">₹{finalProductCost.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
             {/* AI Advisory - Full Width at bottom of right column */}
             {product.aiRecommendation && (
