@@ -123,47 +123,50 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
   };
 
   // Local interactive Profit Calculator states
-  const [cpaCpp, setCpaCpp] = useState<number>(product.profitCalculator?.cpaCpp ?? 150);
-  const [totalOrders, setTotalOrders] = useState<number>(product.profitCalculator?.totalOrders ?? 100);
-  const [validOrderPercentage, setValidOrderPercentage] = useState<number>(product.profitCalculator?.validOrderPercentage ?? 90);
-  const [deliveryPercentage, setDeliveryPercentage] = useState<number>(product.profitCalculator?.deliveryPercentage ?? 70);
-  const [rtoPercentageVal, setRtoPercentageVal] = useState<number>(product.profitCalculator?.rtoPercentage ?? 20);
-  const [rtoRate, setRtoRate] = useState<number>(product.profitCalculator?.rtoRate ?? 100);
-  const [productCostWithShipping, setProductCostWithShipping] = useState<number>(
-    product.profitCalculator?.productCostWithShipping ?? (product.cost + unitShipping)
+  const [cpaCpp, setCpaCpp] = useState<number | ''>(product.profitCalculator?.cpaCpp ?? '');
+  const [totalOrders, setTotalOrders] = useState<number | ''>(product.profitCalculator?.totalOrders ?? '');
+  const [validOrderPercentage, setValidOrderPercentage] = useState<number | ''>(product.profitCalculator?.validOrderPercentage ?? '');
+  const [deliveryPercentage, setDeliveryPercentage] = useState<number | ''>(product.profitCalculator?.deliveryPercentage ?? '');
+  const [rtoPercentageVal, setRtoPercentageVal] = useState<number | ''>(product.profitCalculator?.rtoPercentage ?? '');
+  const [rtoRate, setRtoRate] = useState<number | ''>(product.profitCalculator?.rtoRate ?? '');
+  const [productCostWithShipping, setProductCostWithShipping] = useState<number | ''>(
+    product.profitCalculator?.productCostWithShipping ?? ''
   );
-  const [productSellingPrice, setProductSellingPrice] = useState<number>(
-    product.profitCalculator?.productSellingPrice ?? product.tentativeSellingPrice
+  const [productSellingPrice, setProductSellingPrice] = useState<number | ''>(
+    product.profitCalculator?.productSellingPrice ?? ''
   );
 
   React.useEffect(() => {
-    setCpaCpp(product.profitCalculator?.cpaCpp ?? 150);
-    setTotalOrders(product.profitCalculator?.totalOrders ?? 100);
-    setValidOrderPercentage(product.profitCalculator?.validOrderPercentage ?? 90);
-    setDeliveryPercentage(product.profitCalculator?.deliveryPercentage ?? 70);
-    setRtoPercentageVal(product.profitCalculator?.rtoPercentage ?? 20);
-    setRtoRate(product.profitCalculator?.rtoRate ?? 100);
+    setCpaCpp(product.profitCalculator?.cpaCpp ?? '');
+    setTotalOrders(product.profitCalculator?.totalOrders ?? '');
+    setValidOrderPercentage(product.profitCalculator?.validOrderPercentage ?? '');
+    setDeliveryPercentage(product.profitCalculator?.deliveryPercentage ?? '');
+    setRtoPercentageVal(product.profitCalculator?.rtoPercentage ?? '');
+    setRtoRate(product.profitCalculator?.rtoRate ?? '');
+    setProductCostWithShipping(product.profitCalculator?.productCostWithShipping ?? '');
+    setProductSellingPrice(product.profitCalculator?.productSellingPrice ?? '');
   }, [product.profitCalculator]);
 
-  React.useEffect(() => {
-    setProductCostWithShipping(product.cost + unitShipping);
-  }, [product.cost, unitShipping]);
+  // Derived calculations with safe numeric parsing
+  const numCpaCpp = Number(cpaCpp) || 0;
+  const numTotalOrders = Number(totalOrders) || 0;
+  const numValidOrderPercentage = Number(validOrderPercentage) || 0;
+  const numDeliveryPercentage = Number(deliveryPercentage) || 0;
+  const numRtoPercentageVal = Number(rtoPercentageVal) || 0;
+  const numRtoRate = Number(rtoRate) || 0;
+  const numProductCostWithShipping = Number(productCostWithShipping) || 0;
+  const numProductSellingPrice = Number(productSellingPrice) || 0;
 
-  React.useEffect(() => {
-    setProductSellingPrice(product.tentativeSellingPrice);
-  }, [product.tentativeSellingPrice]);
-
-  // Derived calculations
-  const initialFbCost = cpaCpp * totalOrders;
-  const validOrdersCount = totalOrders * (validOrderPercentage / 100);
+  const initialFbCost = numCpaCpp * numTotalOrders;
+  const validOrdersCount = numTotalOrders * (numValidOrderPercentage / 100);
   const fbAdSpendPerOrder = validOrdersCount > 0 ? initialFbCost / validOrdersCount : 0;
-  const actualOrdersDelivered = validOrdersCount * (deliveryPercentage / 100);
+  const actualOrdersDelivered = validOrdersCount * (numDeliveryPercentage / 100);
   const finalFbCost = actualOrdersDelivered > 0 ? initialFbCost / actualOrdersDelivered : 0;
-  const actualRtoOrders = validOrdersCount * (rtoPercentageVal / 100);
-  const rtoCost = rtoRate * (validOrdersCount - actualOrdersDelivered);
-  const finalProductCost = finalFbCost + productCostWithShipping;
-  const profitPerDelivery = productSellingPrice - finalProductCost;
-  const gmv = productSellingPrice * actualOrdersDelivered;
+  const actualRtoOrders = validOrdersCount * (numRtoPercentageVal / 100);
+  const rtoCost = numRtoRate * (validOrdersCount - actualOrdersDelivered);
+  const finalProductCost = finalFbCost + numProductCostWithShipping;
+  const profitPerDelivery = numProductSellingPrice - finalProductCost;
+  const gmv = numProductSellingPrice * actualOrdersDelivered;
   const netProfitAfterDelivery = (profitPerDelivery * actualOrdersDelivered) - rtoCost;
   const profitPercentageGmv = gmv > 0 ? (netProfitAfterDelivery / gmv) * 100 : 0;
 
@@ -812,7 +815,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                       <input
                         type="number"
                         value={totalOrders}
-                        onChange={(e) => setTotalOrders(Math.max(0, Number(e.target.value)))}
+                        onChange={(e) => setTotalOrders(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
                         className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
                       />
                     </div>
@@ -821,7 +824,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                       <input
                         type="number"
                         value={cpaCpp}
-                        onChange={(e) => setCpaCpp(Math.max(0, Number(e.target.value)))}
+                        onChange={(e) => setCpaCpp(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
                         className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
                       />
                     </div>
@@ -832,7 +835,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                         min="0"
                         max="100"
                         value={validOrderPercentage}
-                        onChange={(e) => setValidOrderPercentage(Math.max(0, Math.min(100, Number(e.target.value))))}
+                        onChange={(e) => setValidOrderPercentage(e.target.value === '' ? '' : Math.max(0, Math.min(100, Number(e.target.value))))}
                         className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
                       />
                     </div>
@@ -843,7 +846,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                         min="0"
                         max="100"
                         value={deliveryPercentage}
-                        onChange={(e) => setDeliveryPercentage(Math.max(0, Math.min(100, Number(e.target.value))))}
+                        onChange={(e) => setDeliveryPercentage(e.target.value === '' ? '' : Math.max(0, Math.min(100, Number(e.target.value))))}
                         className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
                       />
                     </div>
@@ -854,7 +857,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                         min="0"
                         max="100"
                         value={rtoPercentageVal}
-                        onChange={(e) => setRtoPercentageVal(Math.max(0, Math.min(100, Number(e.target.value))))}
+                        onChange={(e) => setRtoPercentageVal(e.target.value === '' ? '' : Math.max(0, Math.min(100, Number(e.target.value))))}
                         className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
                       />
                     </div>
@@ -863,7 +866,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                       <input
                         type="number"
                         value={rtoRate}
-                        onChange={(e) => setRtoRate(Math.max(0, Number(e.target.value)))}
+                        onChange={(e) => setRtoRate(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
                         className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
                       />
                     </div>
@@ -872,7 +875,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                       <input
                         type="number"
                         value={productCostWithShipping}
-                        onChange={(e) => setProductCostWithShipping(Math.max(0, Number(e.target.value)))}
+                        onChange={(e) => setProductCostWithShipping(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
                         className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
                       />
                     </div>
@@ -881,7 +884,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                       <input
                         type="number"
                         value={productSellingPrice}
-                        onChange={(e) => setProductSellingPrice(Math.max(0, Number(e.target.value)))}
+                        onChange={(e) => setProductSellingPrice(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
                         className="w-full px-2 py-1 text-[11px] rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-955 text-slate-800 dark:text-zinc-200 font-semibold focus:outline-none"
                       />
                     </div>
