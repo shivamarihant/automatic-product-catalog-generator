@@ -387,8 +387,8 @@ app.get('/api/health', (req, res) => {
 // Start Server
 async function start() {
   await connectDB();
-  app.listen(PORT, () => {
-    console.log(`Express Sourcing Backend is listening on port ${PORT}`);
+  app.listen(Number(PORT), '0.0.0.0', () => {
+    console.log(`Express Sourcing Backend is listening on 0.0.0.0:${PORT}`);
   });
 }
 
