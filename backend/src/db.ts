@@ -190,18 +190,22 @@ function initJsonDatabase() {
 
 // Connect to Database
 export async function connectDB() {
-  const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/product_catalog_generator';
   initJsonDatabase();
 
-  try {
-    console.log('Connecting to MongoDB...');
-    await mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 2000 });
-    isUsingMongoDB = true;
-    ProductModel = mongoose.model('Product', ProductSchema);
-    CatalogModel = mongoose.model('Catalog', CatalogSchema);
-    console.log('Connected to MongoDB successfully.');
-  } catch (error) {
-    console.warn('MongoDB connection failed. Falling back to local JSON database.');
+  if (process.env.MONGODB_URI) {
+    try {
+      console.log('Connecting to MongoDB...');
+      await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 3000 });
+      isUsingMongoDB = true;
+      ProductModel = mongoose.model('Product', ProductSchema);
+      CatalogModel = mongoose.model('Catalog', CatalogSchema);
+      console.log('Connected to MongoDB successfully.');
+    } catch (error) {
+      console.warn('MongoDB connection failed. Falling back to local JSON database.');
+      isUsingMongoDB = false;
+    }
+  } else {
+    console.log('No MONGODB_URI provided. Using JSON database storage.');
     isUsingMongoDB = false;
   }
 }
