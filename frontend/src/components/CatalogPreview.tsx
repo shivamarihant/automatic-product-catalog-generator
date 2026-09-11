@@ -1,22 +1,23 @@
 import React, { useRef, useState } from 'react';
 import { type ProductInput, type Catalog } from '../utils/api';
 import { OpportunityMeter } from './OpportunityMeter';
-import { 
-  Sparkles, 
-  Globe, 
-  MapPin, 
-  Truck, 
-  Box, 
-  ChevronLeft, 
-  ChevronRight, 
-  TrendingUp, 
-  DollarSign, 
-  ExternalLink, 
-  Ruler, 
-  Gauge, 
+import {
+  Sparkles,
+  Globe,
+  MapPin,
+  Truck,
+  Box,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  DollarSign,
+  ExternalLink,
+  Ruler,
+  Gauge,
   Check,
   Copy,
-  Share2
+  Share2,
+  Search
 } from 'lucide-react';
 
 interface CatalogPreviewProps {
@@ -40,6 +41,51 @@ const getCleanAdsQuery = (name: string): string => {
   return subject;
 };
 
+const extractTitleKeywords = (title: string, primaryAdsKeywords?: string): string[] => {
+  let aiKeywords: string[] = [];
+  if (primaryAdsKeywords) {
+    aiKeywords = primaryAdsKeywords
+      .split(',')
+      .map(k => k.trim().replace(/^["']|["']$/g, ''))
+      .filter(Boolean);
+    if (aiKeywords.length >= 3) return aiKeywords.slice(0, 3);
+  }
+
+  if (!title) return aiKeywords.length > 0 ? aiKeywords : ['Product', 'Item', 'Catalog'];
+
+  const cleanTitle = title.replace(/[\(\)\[\]\{\}\|:\-\–\—,]/g, ' ').replace(/\s+/g, ' ').trim();
+  const stopWords = new Set([
+    'with', 'for', 'and', 'in', 'of', 'at', 'on', 'all', 'one', 'by', 'the', 'a', 'an', 'to', 'from', 'is', 'are',
+    '1pcs', '2pcs', '3pcs', '4pcs', '5pcs', '10pcs', 'set', 'pack', 'new', '2024', '2025', '2026', 'pro', 'max',
+    'mini', 'lite', 'hot', 'sale', 'best', 'quality', 'women', 'men', 'kids', 'free', 'shipping', 'pcs'
+  ]);
+
+  const words = cleanTitle.split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w.toLowerCase()));
+
+  const set = new Set<string>(aiKeywords);
+
+  if (words.length >= 2) {
+    set.add(words.slice(-2).join(' '));
+  }
+  if (words.length >= 3) {
+    set.add(`${words[words.length - 3]} ${words[words.length - 2]}`);
+  }
+  if (words.length >= 4) {
+    set.add(`${words[0]} ${words[words.length - 2]}`);
+  } else if (words.length >= 2) {
+    set.add(`${words[0]} ${words[words.length - 1]}`);
+  }
+  if (set.size < 3 && words.length >= 2) {
+    set.add(words.slice(0, 2).join(' '));
+  }
+  for (const w of words) {
+    if (set.size >= 3) break;
+    set.add(w);
+  }
+
+  return Array.from(set).slice(0, 3);
+};
+
 export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProduct, catalog }) => {
   const product: ProductInput = {
     ...rawProduct,
@@ -51,6 +97,8 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [viewMode] = useState<'dashboard' | 'print'>('dashboard');
   const [copied, setCopied] = useState(false);
+  const [customAdsKeyword, setCustomAdsKeyword] = useState('');
+  const primaryKeywords = extractTitleKeywords(product.productName, product.primaryAdsKeywords);
   const printableAreaRef = useRef<HTMLDivElement>(null);
 
   const getSecureUrl = (url: string) => {
@@ -194,7 +242,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
   return (
     <div className="w-full space-y-4">
-      
+
       {/* Premium Sub-Header Selector & Print triggers */}
       <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800/65 px-3 py-2.5 rounded-2xl shadow-sm flex flex-wrap items-center justify-between gap-3 print:hidden transition-colors">
         <div className="flex flex-col min-w-0 flex-1">
@@ -226,7 +274,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
       {/* -------------------- 1. INTERACTIVE DASHBOARD VIEW -------------------- */}
       <div className={`${viewMode === 'dashboard' ? 'block' : 'hidden'} print:hidden space-y-4`}>
-        
+
         {/* KPI Cards Strip - compact */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Card 1: Score */}
@@ -306,16 +354,16 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
         {/* Main Dashboard Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          
+
           {/* LEFT SIDEBAR: GALLERY & LOGISTICS (4 Columns) */}
           <div className="lg:col-span-4 space-y-4">
-            
+
             {/* Gallery Card */}
             <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 rounded-2xl p-4 shadow-sm space-y-3">
               <h3 className="text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest">
                 Product Images
               </h3>
-              
+
               {product.images && product.images.length > 0 ? (
                 <div className="space-y-2">
                   <div className="relative w-full pt-[75%] bg-slate-50 dark:bg-zinc-955 border border-slate-100 dark:border-zinc-850 rounded-xl overflow-hidden group">
@@ -329,7 +377,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                         (e.target as HTMLImageElement).src = fallbackImage;
                       }}
                     />
-                    
+
                     {product.images.length > 1 && (
                       <div className="absolute inset-0 z-10 pointer-events-none">
                         <button
@@ -347,7 +395,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Thumbnails strip */}
                   {product.images.length > 1 && (
                     <div className="flex gap-1.5 overflow-x-auto py-1 custom-scrollbar">
@@ -355,16 +403,15 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                         <button
                           key={idx}
                           onClick={() => setActiveImageIndex(idx)}
-                          className={`shrink-0 w-10 h-9 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
-                            idx === activeImageIndex
+                          className={`shrink-0 w-10 h-9 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${idx === activeImageIndex
                               ? 'border-brand-500 shadow-sm'
                               : 'border-transparent opacity-60 hover:opacity-100'
-                          }`}
+                            }`}
                         >
-                          <img 
-                            src={getSecureUrl(img)} 
-                            alt={`Thumb ${idx + 1}`} 
-                            className="w-full h-full object-cover" 
+                          <img
+                            src={getSecureUrl(img)}
+                            alt={`Thumb ${idx + 1}`}
+                            className="w-full h-full object-cover"
                             crossOrigin="anonymous"
                             loading="lazy"
                             onError={(e) => {
@@ -388,7 +435,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
               <h3 className="text-[10px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest">
                 Logistics & Dimensions
               </h3>
-              
+
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-slate-50 dark:bg-zinc-955 p-2.5 rounded-xl border border-slate-100/60 dark:border-zinc-900 flex flex-col justify-between min-h-[65px]">
                   <div className="flex items-center gap-1.5 text-slate-400 dark:text-zinc-500">
@@ -397,7 +444,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                   </div>
                   <span className="font-extrabold text-slate-800 dark:text-zinc-200 text-sm mt-1">{product.logistics.weight || 'N/A'}</span>
                 </div>
-                
+
                 <div className="bg-slate-50 dark:bg-zinc-955 p-2.5 rounded-xl border border-slate-100/60 dark:border-zinc-900 flex flex-col justify-between min-h-[65px]">
                   <div className="flex items-center gap-1.5 text-slate-400 dark:text-zinc-500">
                     <Box className="w-3 h-3" />
@@ -496,7 +543,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
               <h3 className="text-[10px] font-bold text-slate-400 dark:text-zinc-555 uppercase tracking-widest">
                 Amazon Best Seller Countries
               </h3>
-              
+
               {product.fetchedData?.amazonBestSellerCountries && product.fetchedData.amazonBestSellerCountries.length > 0 ? (
                 <div className="flex flex-wrap gap-2 pt-1">
                   {product.fetchedData.amazonBestSellerCountries.map((country, idx) => (
@@ -515,7 +562,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
           {/* MAIN PANELS: METRICS & ANALYSIS (8 Columns) */}
           <div className="lg:col-span-8 space-y-4">
-            
+
             {/* Sourcing Cost & Margin Share Card */}
             <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 rounded-2xl p-5 shadow-sm space-y-5">
               <div>
@@ -531,7 +578,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
               <div className="space-y-2">
                 <div className="h-6 w-full rounded-full overflow-hidden flex border border-slate-100 dark:border-zinc-800/50 shadow-inner">
                   {costPercent > 0 && (
-                    <div 
+                    <div
                       className="bg-slate-405 dark:bg-zinc-500 flex items-center justify-center text-[9px] font-black text-white transition-all cursor-help"
                       style={{ width: `${costPercent}%` }}
                       title={`Landed Cost: ₹${unitCost} (${costPercent}%)`}
@@ -540,7 +587,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                     </div>
                   )}
                   {shippingPercent > 0 && (
-                    <div 
+                    <div
                       className="bg-amber-450 dark:bg-amber-500 flex items-center justify-center text-[9px] font-black text-white transition-all cursor-help"
                       style={{ width: `${shippingPercent}%` }}
                       title={`Shipping Fee: ₹${unitShipping} (${shippingPercent}%)`}
@@ -549,7 +596,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                     </div>
                   )}
                   {profitPercent > 0 && (
-                    <div 
+                    <div
                       className="bg-emerald-500 flex items-center justify-center text-[9px] font-black text-white transition-all cursor-help"
                       style={{ width: `${profitPercent}%` }}
                       title={`Net Unit Profit: ₹${unitProfit} (${profitPercent}%)`}
@@ -675,7 +722,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
             {/* Competitive Intelligence Dashboard Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
+
               {/* Marketplace Saturation progress cards */}
               <div className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800/80 rounded-2xl p-5 shadow-sm space-y-3">
                 <div>
@@ -731,32 +778,73 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
                 <div className="space-y-3">
                   {/* Meta ads box */}
-                  <div className="bg-gradient-to-br from-purple-50/50 to-indigo-50/50 dark:from-zinc-955 dark:to-zinc-955 border border-purple-100/50 dark:border-zinc-850 p-3 rounded-xl flex items-center justify-between gap-3">
-                    <div className="space-y-0.5">
-                      <span className="text-[9px] font-extrabold text-purple-650 dark:text-purple-400 uppercase tracking-widest block">Active Meta Creatives</span>
-                      <span className="text-base font-black text-slate-800 dark:text-zinc-200">{product.adsCount} Ads</span>
+                  <div className="bg-gradient-to-br from-purple-50/50 to-indigo-50/50 dark:from-zinc-955 dark:to-zinc-955 border border-purple-100/50 dark:border-zinc-850 p-3.5 rounded-xl space-y-3 shadow-2xs">
+                    {/* 3 Primary Keywords from Title */}
+                    <div className="space-y-1.5">
+                      <div className="flex flex-wrap gap-1.5">
+                        {primaryKeywords.map((kw, i) => (
+                          <a
+                            key={i}
+                            href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(kw)}&search_type=keyword_unordered`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-zinc-900 border border-purple-200 dark:border-zinc-750 hover:border-purple-500 dark:hover:border-purple-400 text-purple-700 dark:text-purple-300 hover:text-purple-900 text-[10px] font-bold rounded-lg shadow-2xs transition-all cursor-pointer"
+                          >
+                            <span>{kw}</span>
+                            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                          </a>
+                        ))}
+                      </div>
                     </div>
-                    <a
-                      href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.primaryAdsKeywords || product.simplifiedName || product.productName))}&search_type=keyword_unordered`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-[9px] font-black uppercase tracking-wider rounded-lg shadow-sm cursor-pointer whitespace-nowrap"
-                    >
-                      Ads Library
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+
+                    {/* Custom Keyword Search */}
+                    <div className="space-y-1 pt-1.5 border-t border-purple-100/60 dark:border-zinc-800/80">
+                      <span className="text-[8.5px] font-extrabold text-slate-400 dark:text-zinc-500 uppercase tracking-wider block">
+                        Custom Keyword Search:
+                      </span>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          if (customAdsKeyword.trim()) {
+                            window.open(
+                              `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(customAdsKeyword.trim())}&search_type=keyword_unordered`,
+                              '_blank'
+                            );
+                          }
+                        }}
+                        className="flex items-center gap-1.5"
+                      >
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            placeholder="Enter custom keyword..."
+                            value={customAdsKeyword}
+                            onChange={(e) => setCustomAdsKeyword(e.target.value)}
+                            className="w-full pl-7 pr-2.5 py-1 text-[10.5px] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-750 rounded-lg text-slate-800 dark:text-zinc-200 placeholder-slate-400 focus:outline-none focus:border-purple-500 font-medium"
+                          />
+                          <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={!customAdsKeyword.trim()}
+                          className="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white text-[9.5px] font-bold rounded-lg shadow-2xs transition-colors flex items-center gap-1 whitespace-nowrap cursor-pointer"
+                        >
+                          Search
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </button>
+                      </form>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="bg-slate-50 dark:bg-zinc-955 p-2.5 rounded-lg border border-slate-100/60 dark:border-zinc-900/50 flex flex-col gap-1">
                       <span className="text-[8px] text-slate-400 font-bold uppercase">First Mover</span>
-                      <span className={`text-[11px] font-extrabold ${
-                        product.fetchedData?.firstMoverAdvantage === 'YES' ? 'text-emerald-600 dark:text-emerald-500' : 'text-amber-600 dark:text-amber-500'
-                      }`}>
+                      <span className={`text-[11px] font-extrabold ${product.fetchedData?.firstMoverAdvantage === 'YES' ? 'text-emerald-600 dark:text-emerald-500' : 'text-amber-600 dark:text-amber-500'
+                        }`}>
                         {product.fetchedData?.firstMoverAdvantage || 'MEDIUM'}
                       </span>
                     </div>
-                    
+
                     <div className="bg-slate-50 dark:bg-zinc-955 p-2.5 rounded-lg border border-slate-100/60 dark:border-zinc-900/50 flex flex-col gap-1">
                       <span className="text-[8px] text-slate-400 font-bold uppercase">Competition</span>
                       <span className="text-[11px] font-extrabold text-slate-800 dark:text-zinc-300">
@@ -808,7 +896,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                 {/* Left Column: Calculator Inputs */}
                 <div className="space-y-3 pr-0 md:pr-4">
                   <h4 className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest pb-1 border-b border-slate-50 dark:border-zinc-850/50">Calculator Inputs</h4>
-                  
+
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <label className="block text-[8px] font-bold text-slate-400 dark:text-zinc-500 mb-1">Total Orders</label>
@@ -894,7 +982,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                 {/* Right Column: Calculated Flows */}
                 <div className="space-y-2.5 pt-4 md:pt-0 pl-0 md:pl-4">
                   <h4 className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest pb-1 border-b border-slate-50 dark:border-zinc-850/50">Calculated Metrics</h4>
-                  
+
                   <div className="flex justify-between py-0.5">
                     <span className="text-slate-500 dark:text-zinc-400">Initial FB Cost</span>
                     <span className="font-bold text-slate-800 dark:text-zinc-200">₹{initialFbCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
@@ -936,7 +1024,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
               <div className="bg-zinc-950 text-white rounded-2xl p-5 relative overflow-hidden shadow-lg border border-zinc-800/85 group">
                 <div className="absolute top-0 right-0 w-36 h-36 bg-brand-500/10 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-brand-500/15 transition-all"></div>
                 <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl"></div>
-                
+
                 <div className="relative z-10 space-y-3">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -954,7 +1042,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                       {copied ? <Check className="w-3.5 h-3.5 text-emerald-450" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   </div>
-                  
+
                   <p className="text-xs font-medium leading-relaxed text-zinc-300 select-all max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
                     {product.aiRecommendation}
                   </p>
@@ -969,12 +1057,12 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
       </div>
 
       {/* -------------------- 2. PRINT-OPTIMIZED ORIGINAL A4 VIEW -------------------- */}
-      <div 
+      <div
         ref={printableAreaRef}
         id="printable-catalog"
         className={`${viewMode === 'print' ? 'flex flex-col items-center gap-8' : 'hidden'} print:flex print:flex-col print:gap-0 print:bg-white print:p-0 print:border-none print:shadow-none w-full`}
       >
-        
+
         {/* PAGE 1 */}
         <div className="w-full max-w-[200mm] min-h-[297mm] bg-white border border-slate-200/60 p-6 rounded-2xl shadow-xl flex flex-col justify-between shrink-0 print:border-none print:shadow-none print:rounded-none print:m-0 print:w-full print:min-h-0">
           <div>
@@ -1024,9 +1112,8 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                           <button
                             key={idx}
                             onClick={() => setActiveImageIndex(idx)}
-                            className={`w-1.5 h-1.5 rounded-full transition-all ${
-                              idx === activeImageIndex ? 'bg-white w-4' : 'bg-white/60'
-                            }`}
+                            className={`w-1.5 h-1.5 rounded-full transition-all ${idx === activeImageIndex ? 'bg-white w-4' : 'bg-white/60'
+                              }`}
                           />
                         ))}
                       </div>
@@ -1045,11 +1132,10 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
                       <button
                         key={idx}
                         onClick={() => setActiveImageIndex(idx)}
-                        className={`shrink-0 w-14 h-10 rounded-lg overflow-hidden border-2 transition-all ${
-                          idx === activeImageIndex
+                        className={`shrink-0 w-14 h-10 rounded-lg overflow-hidden border-2 transition-all ${idx === activeImageIndex
                             ? 'border-slate-800 scale-105 shadow-md'
                             : 'border-transparent opacity-60 hover:opacity-100 hover:border-slate-300'
-                        }`}
+                          }`}
                       >
                         <img src={getSecureUrl(img)} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" crossOrigin="anonymous" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).src = fallbackImage; }} />
                       </button>
@@ -1193,7 +1279,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
             {/* Analysis Grid */}
             <div className="grid grid-cols-2 gap-8 mb-8">
-              
+
               {/* Left Column: Marketplace Analysis */}
               <div className="space-y-6">
                 <div>
@@ -1245,16 +1331,21 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
                 <div>
                   <h3 className="text-xs font-bold text-slate-855 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-4">Meta Ads Density</h3>
-                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100/60 p-2 rounded-xl flex items-center justify-between text-xs gap-4 shadow-sm">
-                    <span className="text-purple-900 font-bold tracking-wide">Active Creatives in Meta Ads Library</span>
-                    <a
-                      href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.primaryAdsKeywords || product.simplifiedName || product.productName))}&search_type=keyword_unordered`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-black text-purple-700 text-[0.7rem] bg-white px-3 py-1 rounded-md shadow-sm border border-purple-100 hover:border-purple-300 hover:text-purple-900 transition-all shrink-0 cursor-pointer"
-                    >
-                      {product.adsCount} Ads ↗
-                    </a>
+                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100/60 p-3 rounded-xl space-y-2 shadow-sm">
+                    <span className="text-purple-900 font-bold tracking-wide text-xs block">Search Meta Ads Library:</span>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {primaryKeywords.map((kw, i) => (
+                        <a
+                          key={i}
+                          href={`https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(kw)}&search_type=keyword_unordered`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2 py-0.5 bg-white border border-purple-200 text-purple-800 text-[10px] font-semibold rounded hover:bg-purple-100 cursor-pointer"
+                        >
+                          {kw} ↗
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 </div>
 

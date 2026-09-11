@@ -622,14 +622,21 @@ async function getPrimaryKeywordsFromTitle(productName: string): Promise<string>
   try {
     const sanitizedName = productName.replace(/[—–-]/g, ' ').replace(/\s+/g, ' ').trim();
     const prompt = `Analyze this product title: "${sanitizedName}".
-Extract the primary product keywords that would be most effective for searching related active ads in the Meta Ads Library.
-These should be the main descriptive search terms (usually 2-3 words) that describe the product itself, not brands or promotional adjectives.
-Example:
-Input: "Perfect Winged Liner Made Easy! Double-Ended Eyeliner Stamp" -> Output: "eyeliner stamp"
-Input: "Godzilla Ice Cube Mold – 3D Silicone Freezer Tray for Drinks" -> Output: "ice cube mold"
-Input: "Premium Wireless Bluetooth Earbuds with Noise Cancellation" -> Output: "wireless earbuds"
+Extract exactly 3 primary, high-intent search keyword phrases (2-3 words each) that e-commerce sellers and advertisers use to search active ads for this exact product on Meta Ads Library.
 
-Respond ONLY with the keywords, with no other text. Do not include markdown, explanations, or quotes. Ensure all words in the output are separated by proper spaces.`;
+Requirements:
+- Return 3 distinct, highly accurate search terms separated by commas.
+- Term 1: The core product category phrase (e.g. "Eyeliner Stamp")
+- Term 2: The key feature/style phrase (e.g. "Winged Eyeliner")
+- Term 3: The descriptive product search term (e.g. "Waterproof Eyeliner")
+- Exclude promotional filler words like "best", "hot sale", "pcs", "free shipping", "discount", "2026", "new".
+
+Examples:
+Input: "Dragon Ball Goku Genki Dama Spirit Bomb LED Night Light Lamp 3D" -> Output: Dragon Ball Lamp, Goku Night Light, Anime LED Light
+Input: "Perfect Winged Liner Made Easy! Waterproof Double-Ended Eyeliner Stamp 2pcs Set" -> Output: Eyeliner Stamp, Winged Eyeliner, Waterproof Eyeliner
+Input: "Foldable Cat Eye Sunglasses Vintage Retro Small Frame for Women" -> Output: Cat Eye Sunglasses, Foldable Sunglasses, Vintage Sunglasses
+
+Respond ONLY with the 3 comma-separated keyword phrases with no quotes, extra text, or markdown formatting.`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -645,7 +652,7 @@ Respond ONLY with the keywords, with no other text. Do not include markdown, exp
     const d = await response.json();
     const txt = d.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (txt) {
-      return txt.replace(/\s+/g, ' ');
+      return txt.replace(/^["']|["']$/g, '').replace(/\s+/g, ' ');
     }
     return runLocalCleanup(productName);
   } catch (err) {

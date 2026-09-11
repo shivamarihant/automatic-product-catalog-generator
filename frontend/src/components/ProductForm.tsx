@@ -17,7 +17,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
   const [rtoPercentage, setRtoPercentage] = useState<number>(15);
   const [upsellPotential, setUpsellPotential] = useState<'YES' | 'MEDIUM' | 'LOW'>('MEDIUM');
   const [lowerCac, setLowerCac] = useState<'YES' | 'MEDIUM' | 'LOW'>('MEDIUM');
-  
+
   // Market Sellers
   const [amazonSellers, setAmazonSellers] = useState<number | undefined>(undefined);
   const [flipkartSellers, setFlipkartSellers] = useState<number | undefined>(undefined);
@@ -101,7 +101,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const files = Array.from(e.target.files);
-    
+
     if (images.length + files.length > 10) {
       setValidationError('You can upload a maximum of 10 images.');
       return;
@@ -123,7 +123,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
     const handleGlobalPaste = async (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
       if (!items) return;
-      
+
       const files: File[] = [];
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
@@ -133,14 +133,14 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
           }
         }
       }
-      
+
       if (files.length === 0) return;
-      
+
       if (images.length + files.length > 10) {
         setValidationError('You can upload a maximum of 10 images.');
         return;
       }
-      
+
       setUploadingImages(true);
       setValidationError('');
       try {
@@ -249,11 +249,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
         <button
           type="button"
           onClick={() => setActiveTab('basic')}
-          className={`flex-1 flex items-center justify-center gap-2.5 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
-            activeTab === 'basic'
+          className={`flex-1 flex items-center justify-center gap-2.5 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${activeTab === 'basic'
               ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-sm border border-slate-200/60 dark:border-zinc-700/50'
               : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50 dark:text-zinc-400 dark:hover:text-zinc-200'
-          }`}
+            }`}
         >
           <Package className="w-4 h-4 text-brand-500" />
           Basic & Images
@@ -261,11 +260,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
         <button
           type="button"
           onClick={() => setActiveTab('competition')}
-          className={`flex-1 flex items-center justify-center gap-2.5 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
-            activeTab === 'competition'
+          className={`flex-1 flex items-center justify-center gap-2.5 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${activeTab === 'competition'
               ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-sm border border-slate-200/60 dark:border-zinc-700/50'
               : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50 dark:text-zinc-400 dark:hover:text-zinc-200'
-          }`}
+            }`}
         >
           <Globe className="w-4 h-4 text-brand-500" />
           Competition
@@ -273,11 +271,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
         <button
           type="button"
           onClick={() => setActiveTab('logistics')}
-          className={`flex-1 flex items-center justify-center gap-2.5 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
-            activeTab === 'logistics'
+          className={`flex-1 flex items-center justify-center gap-2.5 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${activeTab === 'logistics'
               ? 'bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 shadow-sm border border-slate-200/60 dark:border-zinc-700/50'
               : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/50 dark:text-zinc-400 dark:hover:text-zinc-200'
-          }`}
+            }`}
         >
           <ShieldAlert className="w-4 h-4 text-brand-500" />
           Logistics & Sourcing
@@ -294,7 +291,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
 
       {/* Form Content */}
       <div className="p-6">
-        
+
         {/* TAB 1: BASIC INFO & IMAGES */}
         {activeTab === 'basic' && (
           <div className="space-y-5">
@@ -364,7 +361,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
             {/* Images Upload Zone */}
             <div>
               <label className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Product Images ({images.length}/10)</label>
-              <div 
+              <div
                 onClick={() => fileInputRef.current?.click()}
                 className="border-2 border-dashed border-slate-200 dark:border-zinc-800 hover:border-brand-400 dark:hover:border-brand-500 hover:bg-brand-50/5 dark:hover:bg-brand-500/5 cursor-pointer rounded-2xl p-6 text-center transition-all flex flex-col items-center justify-center"
               >
@@ -376,7 +373,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
                   onChange={handleImageFileChange}
                   className="hidden"
                 />
-                
+
                 {uploadingImages ? (
                   <Loader2 className="w-8 h-8 text-brand-500 animate-spin mb-2" />
                 ) : (
@@ -562,7 +559,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100"
                   >
                     <option value="non-cosmetics">Non-Cosmetics Shipping Cost (₹700/kg)</option>
-                    <option value="cosmetics">Cosmetics Shipping Cost (₹1,400/kg)</option>
+                    <option value="cosmetics">Cosmetics / Electronics / BIS Shipping Cost (₹1,400/kg)</option>
                   </select>
                 </div>
                 <div>
@@ -675,7 +672,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
         <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest max-w-[280px]">
           Please review the details in each tab before saving.
         </div>
-        
+
         {activeTab !== 'logistics' ? (
           <div className="flex items-center gap-2">
             <button

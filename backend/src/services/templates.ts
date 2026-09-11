@@ -21,6 +21,51 @@ function getCleanAdsQuery(name: string): string {
   return subject;
 }
 
+function extractTitleKeywords(title: string, primaryAdsKeywords?: string): string[] {
+  let aiKeywords: string[] = [];
+  if (primaryAdsKeywords) {
+    aiKeywords = primaryAdsKeywords
+      .split(',')
+      .map(k => k.trim().replace(/^["']|["']$/g, ''))
+      .filter(Boolean);
+    if (aiKeywords.length >= 3) return aiKeywords.slice(0, 3);
+  }
+
+  if (!title) return aiKeywords.length > 0 ? aiKeywords : ['Product', 'Item', 'Catalog'];
+
+  const cleanTitle = title.replace(/[\(\)\[\]\{\}\|:\-\–\—,]/g, ' ').replace(/\s+/g, ' ').trim();
+  const stopWords = new Set([
+    'with', 'for', 'and', 'in', 'of', 'at', 'on', 'all', 'one', 'by', 'the', 'a', 'an', 'to', 'from', 'is', 'are',
+    '1pcs', '2pcs', '3pcs', '4pcs', '5pcs', '10pcs', 'set', 'pack', 'new', '2024', '2025', '2026', 'pro', 'max',
+    'mini', 'lite', 'hot', 'sale', 'best', 'quality', 'women', 'men', 'kids', 'free', 'shipping', 'pcs'
+  ]);
+
+  const words = cleanTitle.split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w.toLowerCase()));
+
+  const set = new Set<string>(aiKeywords);
+
+  if (words.length >= 2) {
+    set.add(words.slice(-2).join(' '));
+  }
+  if (words.length >= 3) {
+    set.add(`${words[words.length - 3]} ${words[words.length - 2]}`);
+  }
+  if (words.length >= 4) {
+    set.add(`${words[0]} ${words[words.length - 2]}`);
+  } else if (words.length >= 2) {
+    set.add(`${words[0]} ${words[words.length - 1]}`);
+  }
+  if (set.size < 3 && words.length >= 2) {
+    set.add(words.slice(0, 2).join(' '));
+  }
+  for (const w of words) {
+    if (set.size >= 3) break;
+    set.add(w);
+  }
+
+  return Array.from(set).slice(0, 3);
+}
+
 export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): string {
   const product = {
     ...rawProduct,
@@ -28,6 +73,8 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
     fetchedData: catalog.fetchedData || rawProduct.fetchedData,
     aiRecommendation: catalog.aiRecommendation || rawProduct.aiRecommendation
   };
+
+  const primaryKeywords = extractTitleKeywords(product.productName, product.primaryAdsKeywords);
 
   const parseWeightToKg = (weightStr: string): number => {
     if (!weightStr) return 0;
@@ -726,9 +773,14 @@ export function getCatalogTemplateHtml(rawProduct: Product, catalog: Catalog): s
         </div>
 
         <div class="section-title" style="margin-top: 5mm;">Meta Ads Density</div>
-        <div class="competitor-card" style="border-left: 4px solid #6366f1; display: flex; justify-content: space-between; align-items: center; gap: 4mm;">
-          <span class="competitor-name">Active Product Creatives (Meta Ads Library)</span>
-          <a class="competitor-count" style="color: #6366f1; font-size: 13px; white-space: nowrap; flex-shrink: 0; text-decoration: none;" href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.primaryAdsKeywords || product.simplifiedName || product.productName))}&search_type=keyword_unordered" target="_blank">${product.adsCount} Ads Running ↗</a>
+        <div class="competitor-card" style="border-left: 4px solid #6366f1; display: flex; flex-direction: column; gap: 2mm;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span class="competitor-name">Active Product Creatives (Meta Ads Library)</span>
+            <a class="competitor-count" style="color: #6366f1; font-size: 13px; white-space: nowrap; flex-shrink: 0; text-decoration: none;" href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(getCleanAdsQuery(product.primaryAdsKeywords || product.simplifiedName || product.productName))}&search_type=keyword_unordered" target="_blank">${product.adsCount} Ads Running ↗</a>
+          </div>
+          <div style="display: flex; gap: 2mm; flex-wrap: wrap; margin-top: 2px;">
+            ${primaryKeywords.map(kw => `<a href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=IN&q=${encodeURIComponent(kw)}&search_type=keyword_unordered" target="_blank" style="font-size: 10px; background: #eef2ff; color: #4338ca; padding: 2px 8px; border-radius: 4px; text-decoration: none; border: 1px solid #c7d2fe;">${kw} ↗</a>`).join('')}
+          </div>
         </div>
       </div>
 
