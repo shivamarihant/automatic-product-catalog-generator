@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { type ProductInput, type Catalog } from '../utils/api';
+import { type ProductInput, type Catalog, BACKEND_URL } from '../utils/api';
 import { OpportunityMeter } from './OpportunityMeter';
 import {
   Sparkles,
@@ -25,7 +25,7 @@ interface CatalogPreviewProps {
   catalog: Catalog;
 }
 
-const getCleanAdsQuery = (name: string): string => {
+export const getCleanAdsQuery = (name: string): string => {
   if (!name) return '';
   let clean = name.replace(/()[[\]{}]/g, ' ').replace(/\s+/g, ' ').trim();
   const parts = clean.split(/\b(with|for|and|in|of|at|on|all|one|by|—|–|-|\||:)\b/i);
@@ -103,12 +103,16 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({ product: rawProd
 
   const getSecureUrl = (url: string) => {
     if (!url) return '';
-    if (window.location.protocol === 'https:' && url.startsWith('http://')) {
-      if (!url.includes('localhost') && !url.includes('127.0.0.1')) {
-        return url.replace('http://', 'https://');
+    let finalUrl = url;
+    if (window.location.protocol === 'https:') {
+      if (finalUrl.includes('localhost:') || finalUrl.includes('127.0.0.1:')) {
+        finalUrl = finalUrl.replace(/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, BACKEND_URL);
+      }
+      if (finalUrl.startsWith('http://')) {
+        finalUrl = finalUrl.replace('http://', 'https://');
       }
     }
-    return url;
+    return finalUrl;
   };
 
   const formattedDate = new Date(catalog.createdAt).toLocaleDateString('en-IN', {

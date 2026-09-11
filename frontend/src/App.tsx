@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   type ProductInput, 
   type Catalog, 
+  BACKEND_URL,
   fetchProducts, 
   createProduct, 
   generateCatalog, 
@@ -33,12 +34,16 @@ const CHECKPOINTS = [
 
 const getSecureUrl = (url: string) => {
   if (!url) return '';
-  if (window.location.protocol === 'https:' && url.startsWith('http://')) {
-    if (!url.includes('localhost') && !url.includes('127.0.0.1')) {
-      return url.replace('http://', 'https://');
+  let finalUrl = url;
+  if (window.location.protocol === 'https:') {
+    if (finalUrl.includes('localhost:') || finalUrl.includes('127.0.0.1:')) {
+      finalUrl = finalUrl.replace(/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, BACKEND_URL);
+    }
+    if (finalUrl.startsWith('http://')) {
+      finalUrl = finalUrl.replace('http://', 'https://');
     }
   }
-  return url;
+  return finalUrl;
 };
 
 function App() {
