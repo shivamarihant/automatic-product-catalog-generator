@@ -50,6 +50,11 @@ if (!fs.existsSync(CATALOGS_DIR)) {
 // Serve uploaded images and PDF catalogs statically
 app.use('/uploads', express.static(UPLOADS_DIR));
 
+// Root Health Check Route
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Product Catalog Generator API is running.' });
+});
+
 // Configure Multer for File Uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
