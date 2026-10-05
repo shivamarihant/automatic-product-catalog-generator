@@ -558,8 +558,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ onSave, isSaving }) =>
                     onChange={(e) => setShippingType(e.target.value as 'cosmetics' | 'non-cosmetics')}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium bg-slate-50 dark:bg-zinc-950/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all dark:text-zinc-100"
                   >
-                    <option value="non-cosmetics">Non-Cosmetics Shipping Cost (₹700/kg)</option>
-                    <option value="cosmetics">Cosmetics / Electronics / BIS Shipping Cost (₹1,400/kg)</option>
+                    <option value="non-cosmetics">Non-Cosmetics Shipping Cost</option>
+                    <option value="cosmetics">Cosmetics / Electronics / BIS Shipping Cost</option>
                   </select>
                 </div>
                 <div>
